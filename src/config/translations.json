@@ -1,0 +1,18 @@
+{
+  "welcome": {
+    "en": "Welcome",
+    "fr": "Bienvenue"
+  },
+  "select_language": {
+    "en": "Select Language",
+    "fr": "Choisir la langue"
+  },
+  "english": {
+    "en": "English",
+    "fr": "Anglais"
+  },
+  "french": {
+    "en": "French",
+    "fr": "Français"
+  }
+} 
