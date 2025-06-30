@@ -14,5 +14,13 @@
   "french": {
     "en": "French",
     "fr": "Français"
+  },
+  "save_settings": {
+    "en": "Save Settings",
+    "fr": "Enregistrer"
+  },
+  "saved": {
+    "en": "Saved!",
+    "fr": "Enregistré !"
   }
 } 

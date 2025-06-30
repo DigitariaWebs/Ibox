@@ -4,19 +4,27 @@ import { Button, Text } from './ui';
 import { useTranslation } from './config/i18n';
 
 const LANGUAGES = [
-  { code: 'en', label: 'English', flag: require('./assets/images/flag_en.png') },
-  { code: 'fr', label: 'Français', flag: require('./assets/images/flag_fr.png') },
+  { code: 'en', label: 'English', flag: require('../assets/images/flag_en.png') },
+  { code: 'fr', label: 'Français', flag: require('../assets/images/flag_fr.png') },
 ];
 
-const LanguageSelectionScreen: React.FC = () => {
+const LanguageSelectionScreen: React.FC<any> = ({ navigation }) => {
   const { t, locale, setLocale } = useTranslation();
-  const [selected, setSelected] = useState(locale);
   const [saved, setSaved] = useState(false);
 
+  const handleSelect = (code: 'en' | 'fr') => {
+    setLocale(code);
+    setSaved(false);
+  };
+
   const handleSave = () => {
-    setLocale(selected);
     setSaved(true);
-    setTimeout(() => setSaved(false), 1200);
+    setTimeout(() => {
+      setSaved(false);
+      if (navigation && navigation.replace) {
+        navigation.replace('Main'); // Go to main app (Home/BottomNav)
+      }
+    }, 800);
   };
 
   return (
@@ -28,16 +36,16 @@ const LanguageSelectionScreen: React.FC = () => {
         {LANGUAGES.map((lang) => (
           <TouchableOpacity
             key={lang.code}
-            style={[styles.card, selected === lang.code && styles.selectedCard]}
-            onPress={() => setSelected(lang.code as 'en' | 'fr')}
+            style={[styles.card, locale === lang.code && styles.selectedCard]}
+            onPress={() => handleSelect(lang.code as 'en' | 'fr')}
             activeOpacity={0.8}
           >
             <Image source={lang.flag} style={styles.flag} />
             <Text style={styles.langLabel} weight="semibold">
               {lang.label}
             </Text>
-            <View style={[styles.radioOuter, selected === lang.code && styles.radioOuterSelected]}>
-              {selected === lang.code && <View style={styles.radioInner} />}
+            <View style={[styles.radioOuter, locale === lang.code && styles.radioOuterSelected]}>
+              {locale === lang.code && <View style={styles.radioInner} />}
             </View>
           </TouchableOpacity>
         ))}
@@ -47,7 +55,7 @@ const LanguageSelectionScreen: React.FC = () => {
         onPress={handleSave}
         variant="primary"
         style={styles.saveButton}
-        disabled={selected === locale}
+        disabled={false}
       />
     </View>
   );
