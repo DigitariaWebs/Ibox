@@ -152,19 +152,23 @@ export const Button: React.FC<ButtonProps> = ({
     let pressedColor: string = '#1D4ED8'; // Darker blue
     
     switch (variant) {
-      case 'primary':
+      case 'primary': {
         primaryColor = Colors.primary;
         pressedColor = '#1D4ED8';
         break;
-      case 'secondary':
-        primaryColor = Colors.secondary;
-        pressedColor = '#059669';
+      }
+      case 'secondary': {
+        // Start with white background, animate to primary brand color on press
+        primaryColor = '#FFFFFF';
+        pressedColor = Colors.primary;
         break;
+      }
       case 'outline':
-      case 'ghost':
+      case 'ghost': {
         primaryColor = 'transparent';
         pressedColor = 'rgba(37, 99, 235, 0.1)';
         break;
+      }
     }
 
     return {
@@ -201,7 +205,12 @@ export const Button: React.FC<ButtonProps> = ({
     const baseStyle: TextStyle = {
       fontWeight: '700',
       fontSize: 16,
-      color: variant === 'primary' ? '#fff' : Colors.primary,
+      color:
+        variant === 'primary'
+          ? '#fff'
+          : variant === 'secondary' && isPressed
+          ? '#fff'
+          : Colors.primary,
       textAlign: 'center',
     };
     return baseStyle;

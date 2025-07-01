@@ -21,8 +21,8 @@ const LanguageSelectionScreen: React.FC<any> = ({ navigation }) => {
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
-      if (navigation && navigation.replace) {
-        navigation.replace('Main'); // Go to main app (Home/BottomNav)
+      if (navigation && navigation.goBack) {
+        navigation.goBack(); // Return to previous screen (AuthSelection)
       }
     }, 800);
   };

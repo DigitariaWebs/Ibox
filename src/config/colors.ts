@@ -5,23 +5,37 @@
  */
 export const Colors = {
   /** Primary brand color (Tailwind blue-600) */
-  primary: "#2563EB",
+  primary: '#0AA5A8',
+  primaryDark: '#088A8D',
+  primaryLight: '#4DC5C8',
+
   /** Secondary brand color (Tailwind emerald-500) */
-  secondary: "#10B981",
+  secondary: '#10B981',
 
   /** UI backgrounds */
-  background: "#FFFFFF",
-  surface: "#F3F4F6", // gray-100
+  background: '#FFFFFF',
+  surface: '#F3F4F6', // gray-100
+  surfaceDark: '#E5E7EB',
 
   /** Text */
-  textPrimary: "#111827", // gray-900
-  textSecondary: "#6B7280", // gray-500
+  textPrimary: '#1F2937',
+  textSecondary: '#6B7280', // gray-500
+  textTertiary: '#9CA3AF',
 
   /** Semantic */
-  error: "#EF4444", // red-500
-  warning: "#F59E0B", // amber-500
-  info: "#3B82F6", // blue-500
-  success: "#22C55E", // green-500
+  error: '#EF4444', // red-500
+  warning: '#F59E0B', // amber-500
+  info: '#3B82F6', // blue-500
+  success: '#22C55E', // green-500
+
+  /** Border colors */
+  border: '#E5E7EB',
+  borderLight: '#F3F4F6',
+
+  /** Other colors */
+  white: '#FFFFFF',
+  black: '#000000',
+  transparent: 'transparent',
 } as const satisfies Record<string, string>;
 
 export type ColorKey = keyof typeof Colors;

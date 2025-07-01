@@ -58,6 +58,7 @@ export function useTranslation() {
   }, [reduxLocale]);
 
   const set = useCallback((loc: Locale) => {
+    currentLocale = loc; // keep module-level locale in sync
     dispatch(setLanguage(loc));
   }, [dispatch]);
 

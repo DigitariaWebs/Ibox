@@ -12,7 +12,24 @@ import { Button, Text, SearchInput, Card, Input, Icon, BottomNavbar1 } from './s
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './src/store/store';
 import LanguageSelectionScreen from './src/LanguageSelectionScreen';
+import AuthSelectionScreen from './src/AuthSelectionScreen';
 import { RootState } from './src/store/store';
+import LoadingScreen from './src/LoadingScreen';
+import OnboardingScreen from './src/OnboardingScreen';
+import LoginScreen from './src/LoginScreen';
+import { SignUpProvider } from './src/contexts/SignUpContext';
+import OnboardingEntryScreen from './src/screens/signup/OnboardingEntryScreen';
+import AccountTypeScreen from './src/screens/signup/AccountTypeScreen';
+import IdentityScreen from './src/screens/signup/IdentityScreen';
+import OTPVerificationScreen from './src/screens/signup/OTPVerificationScreen';
+import AddressLocaleScreen from './src/screens/signup/AddressLocaleScreen';
+import CustomerExtrasScreen from './src/screens/signup/CustomerExtrasScreen';
+import PaymentMethodScreen from './src/screens/signup/PaymentMethodScreen';
+import CustomerAccountTypeScreen from './src/screens/signup/CustomerAccountTypeScreen';
+import TransporterVehicleScreen from './src/screens/signup/TransporterVehicleScreen';
+import TransporterComplianceScreen from './src/screens/signup/TransporterComplianceScreen';
+import TransporterBankingScreen from './src/screens/signup/TransporterBankingScreen';
+import ConfirmationScreen from './src/screens/signup/ConfirmationScreen';
 
 // Import store and actions
 import { increment, decrement, incrementByAmount } from './src/store/store';
@@ -133,14 +150,23 @@ const RootNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {(!language || language === 'en' || language === 'fr') ? (
-          <>
-            <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
-            <Stack.Screen name="Main" component={BottomNavbar1} />
-          </>
-        ) : (
-          <Stack.Screen name="Main" component={BottomNavbar1} />
-        )}
+        <Stack.Screen name="AuthSelection" component={AuthSelectionScreen} />
+        <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="OnboardingEntry" component={OnboardingEntryScreen} />
+        <Stack.Screen name="AccountTypeScreen" component={AccountTypeScreen} />
+        <Stack.Screen name="IdentityScreen" component={IdentityScreen} />
+        <Stack.Screen name="OTPVerificationScreen" component={OTPVerificationScreen} />
+        <Stack.Screen name="AddressLocaleScreen" component={AddressLocaleScreen} />
+        <Stack.Screen name="PaymentMethodScreen" component={PaymentMethodScreen} />
+        <Stack.Screen name="CustomerAccountTypeScreen" component={CustomerAccountTypeScreen} />
+        <Stack.Screen name="CustomerExtrasScreen" component={CustomerExtrasScreen} />
+        <Stack.Screen name="TransporterVehicleScreen" component={TransporterVehicleScreen} />
+        <Stack.Screen name="TransporterComplianceScreen" component={TransporterComplianceScreen} />
+        <Stack.Screen name="TransporterBankingScreen" component={TransporterBankingScreen} />
+        <Stack.Screen name="ConfirmationScreen" component={ConfirmationScreen} />
+        <Stack.Screen name="HomeScreen" component={HomeScreen} />
+        <Stack.Screen name="Main" component={BottomNavbar1} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -148,18 +174,36 @@ const RootNavigator = () => {
 
 export default function App() {
   const fontsLoaded = useLoadFonts();
+  const [appReady, setAppReady] = React.useState(false);
+  const [onboardingComplete, setOnboardingComplete] = React.useState(false);
+  
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator size="large" color="#0AA5A8" />
         <Text style={{ marginTop: 16 }}>Loading fonts...</Text>
       </View>
     );
   }
+
+  if (!appReady) {
+    return (
+      <LoadingScreen onLoadingComplete={() => setAppReady(true)} />
+    );
+  }
+
+  if (!onboardingComplete) {
+    return (
+      <OnboardingScreen onGetStarted={() => setOnboardingComplete(true)} />
+    );
+  }
+
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <RootNavigator />
+        <SignUpProvider>
+          <RootNavigator />
+        </SignUpProvider>
       </PersistGate>
     </Provider>
   );

@@ -21,6 +21,9 @@ export const Fonts = {
   WayCome: {
     Regular: 'WayCome-Regular',
   },
+  Cachet: {
+    Medium: 'Cachet-Medium',
+  },
 };
 
 export const fontAssets = {
@@ -32,6 +35,7 @@ export const fontAssets = {
   [Fonts.SFProDisplay.Regular]: require('../../assets/fonts/SFProDisplay/SFProDisplay-Regular.otf'),
   [Fonts.SFProDisplay.ThinItalic]: require('../../assets/fonts/SFProDisplay/SFProDisplay-ThinItalic.otf'),
   [Fonts.WayCome.Regular]: require('../../assets/fonts/WayCome/WayCome.ttf'),
+  [Fonts.Cachet.Medium]: require('../../assets/fonts/cachet/Cachet Std Medium.otf'),
 };
 
 export type FontFamily = keyof typeof Fonts;
