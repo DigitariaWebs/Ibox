@@ -67,6 +67,62 @@ export const customerExtrasSchema = Yup.object().shape({
     then: (schema) => schema.min(5, 'Tax ID must be at least 5 characters').required('Tax ID is required'),
     otherwise: (schema) => schema.optional(),
   }),
+  businessType: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.min(2, 'Business type must be at least 2 characters').required('Business type is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  industry: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.min(2, 'Industry must be at least 2 characters').required('Industry is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  registrationNumber: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.min(3, 'Registration number must be at least 3 characters').required('Registration number is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  incorporationDate: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.matches(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').required('Incorporation date is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  employeeCount: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.required('Employee count is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  annualRevenue: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.required('Annual revenue range is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  businessWebsite: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.url('Please enter a valid website URL'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  businessPhone: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.matches(/^\+?[\d\s\-\(\)]+$/, 'Please enter a valid phone number').min(10, 'Phone number must be at least 10 digits').required('Business phone is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  businessEmail: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.email('Please enter a valid email address').required('Business email is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  businessAddress: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.min(10, 'Please enter a complete business address').required('Business address is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  billingAddress: Yup.string().optional(),
+  businessDescription: Yup.string().when('isBusiness', {
+    is: true,
+    then: (schema) => schema.min(20, 'Business description must be at least 20 characters').required('Business description is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
 });
 
 // Step 4-b: Transporter Vehicle

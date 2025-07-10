@@ -44,14 +44,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
     {
       id: 'card',
       name: 'Credit/Debit Card',
-      logo: (
-        <View style={styles.cardLogos}>
-          <VisaLogo width={32} height={20} />
-          <MastercardLogo width={32} height={20} />
-          <AmexLogo width={32} height={20} />
-          <DiscoverLogo width={32} height={20} />
-        </View>
-      ),
+      logo: <VisaLogo width={48} height={30} />,
       description: 'Visa, Mastercard, Amex, Discover',
     },
     {
@@ -63,7 +56,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
     {
       id: 'googlepay',
       name: 'Google Pay',
-      logo: <GooglePayLogo width={40} height={24} />,
+      logo: <GooglePayLogo width={60} height={36} />,
       description: 'Quick and secure payments',
     },
     {
@@ -97,12 +90,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       {/* Payment Method Selection */}
       <View style={styles.methodSelection}>
         <Text style={styles.sectionTitle}>Choose payment method</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.methodScroll}
-          contentContainerStyle={styles.methodScrollContent}
-        >
+        <View style={styles.methodGrid}>
           {PAYMENT_METHODS.map((method) => (
             <TouchableOpacity
               key={method.id}
@@ -130,12 +118,12 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
               </Text>
               {selectedMethod === method.id && (
                 <View style={styles.methodCheck}>
-                  <Icon name="check" type="Feather" size={14} color={Colors.white} />
+                  <Icon name="check" type="Feather" size={16} color={Colors.white} />
                 </View>
               )}
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
       </View>
 
       {/* Payment Details */}
@@ -198,34 +186,53 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 19,
     color: Colors.textPrimary,
-    fontWeight: '600',
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  methodScroll: {
-    flexGrow: 0,
-  },
-  methodScrollContent: {
-    paddingHorizontal: 4,
+  methodGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
+    justifyContent: 'space-between',
   },
   methodCard: {
-    width: 140,
+    width: '48%',
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 2,
     borderColor: Colors.borderLight,
     alignItems: 'center',
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    minHeight: 140,
+    justifyContent: 'center',
   },
   methodCardSelected: {
     borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: Colors.primary + '08',
+    shadowColor: Colors.primary,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+    transform: [{ scale: 1.02 }],
   },
   methodLogo: {
-    height: 32,
-    marginBottom: 12,
+    height: 40,
+    marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -237,34 +244,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   methodName: {
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.textPrimary,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   methodNameSelected: {
     color: Colors.primary,
   },
   methodDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14,
+    fontWeight: '500',
   },
   methodDescriptionSelected: {
     color: Colors.primary,
   },
   methodCheck: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: 12,
+    right: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   paymentDetails: {
     minHeight: 100,
@@ -274,47 +290,66 @@ const styles = StyleSheet.create({
   },
   digitalPaymentInfo: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    padding: 24,
     borderWidth: 1,
-    borderColor: Colors.success + '20',
+    borderColor: Colors.success + '30',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   digitalPaymentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
     gap: 12,
   },
   digitalPaymentTitle: {
-    fontSize: 16,
+    fontSize: 17,
     color: Colors.textPrimary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   digitalPaymentDescription: {
     fontSize: 14,
     color: Colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: 20,
+    fontWeight: '500',
   },
   digitalPaymentFeatures: {
-    gap: 8,
+    gap: 12,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    backgroundColor: Colors.white,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.success + '15',
   },
   featureText: {
     fontSize: 13,
     color: Colors.textPrimary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   skipButton: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary + '30',
   },
   skipButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.primary,
     fontWeight: '600',
   },

@@ -13,7 +13,6 @@ import {
 import { Button, Text, Icon, Input } from '../../ui';
 import { Colors } from '../../config/colors';
 import { useSignUp } from '../../contexts/SignUpContext';
-import { customerExtrasSchema } from '../../validation/signUpSchemas';
 
 interface CustomerAccountTypeScreenProps {
   navigation: any;
@@ -21,8 +20,6 @@ interface CustomerAccountTypeScreenProps {
 
 interface FormData {
   isBusiness: boolean;
-  companyName: string;
-  taxId: string;
 }
 
 const CustomerAccountTypeScreen: React.FC<CustomerAccountTypeScreenProps> = ({ navigation }) => {
@@ -30,8 +27,6 @@ const CustomerAccountTypeScreen: React.FC<CustomerAccountTypeScreenProps> = ({ n
   
   const [formData, setFormData] = useState<FormData>({
     isBusiness: signUpData.isBusiness || false,
-    companyName: signUpData.companyName || '',
-    taxId: signUpData.taxId || '',
   });
   
   const [errors, setErrors] = useState<Partial<FormData>>({});
@@ -42,28 +37,9 @@ const CustomerAccountTypeScreen: React.FC<CustomerAccountTypeScreenProps> = ({ n
   }, [formData]);
 
   const validateForm = async () => {
-    try {
-      const validationData = {
-        paymentToken: 'valid', // Skip payment validation
-        isBusiness: formData.isBusiness,
-        companyName: formData.companyName,
-        taxId: formData.taxId,
-      };
-      await customerExtrasSchema.validate(validationData, { abortEarly: false });
-      setErrors({});
-      
-      // Check if business fields are valid if business account
-      const businessOk = !formData.isBusiness || (formData.companyName && formData.taxId);
-      setIsValid(businessOk);
-    } catch (validationErrors: any) {
-      const errorObj: Partial<FormData> = {};
-      validationErrors.inner?.forEach((error: any) => {
-        if (error.path === 'paymentToken') return; // Skip payment validation error
-        errorObj[error.path as keyof FormData] = error.message;
-      });
-      setErrors(errorObj);
-      setIsValid(false);
-    }
+    // For this screen, we just need to ensure an account type is selected
+    setIsValid(true);
+    setErrors({});
   };
 
   const updateField = (field: keyof FormData, value: string | boolean) => {
@@ -74,11 +50,17 @@ const CustomerAccountTypeScreen: React.FC<CustomerAccountTypeScreenProps> = ({ n
     if (isValid) {
       updateSignUpData({
         isBusiness: formData.isBusiness,
-        companyName: formData.companyName,
-        taxId: formData.taxId,
       });
-      setCurrentStep(8); // Jump to confirmation for customers
-      navigation.navigate('ConfirmationScreen');
+      
+      if (formData.isBusiness) {
+        // Navigate to business details screen
+        setCurrentStep(6);
+        navigation.navigate('BusinessDetailsScreen');
+      } else {
+        // Go directly to confirmation for personal accounts
+        setCurrentStep(8);
+        navigation.navigate('ConfirmationScreen');
+      }
     }
   };
 
@@ -196,94 +178,21 @@ const CustomerAccountTypeScreen: React.FC<CustomerAccountTypeScreenProps> = ({ n
                   </TouchableOpacity>
                 </View>
                 
-                {/* Business Fields */}
-                {formData.isBusiness && (
-                  <View style={styles.businessFields}>
-                    <Input
-                      placeholder="Company name"
-                      value={formData.companyName}
-                      onChangeText={(value) => updateField('companyName', value)}
-                      error={errors.companyName}
-                      leftIcon={<Icon name="building" type="Feather" size={20} color={Colors.textSecondary} />}
-                      style={styles.inputField}
-                    />
-                    
-                    <Input
-                      placeholder="Tax ID / VAT number"
-                      value={formData.taxId}
-                      onChangeText={(value) => updateField('taxId', value)}
-                      error={errors.taxId}
-                      leftIcon={<Icon name="hash" type="Feather" size={20} color={Colors.textSecondary} />}
-                      style={styles.inputField}
-                    />
-                  </View>
-                )}
               </View>
             </View>
             
-            {/* Features Comparison */}
-            <View style={styles.featuresCard}>
-              <View style={styles.featuresHeader}>
-                <Icon name="star" type="Feather" size={18} color={Colors.primary} />
-                <Text style={styles.featuresTitle}>Account Features</Text>
-              </View>
-              
-              <View style={styles.featuresComparison}>
-                <View style={styles.featureColumn}>
-                  <Text style={styles.columnTitle}>Personal</Text>
-                  <View style={styles.featuresList}>
-                    <View style={styles.featureItem}>
-                      <Icon name="check" type="Feather" size={14} color={Colors.success} />
-                      <Text style={styles.featureText}>Individual shipping</Text>
-                    </View>
-                    <View style={styles.featureItem}>
-                      <Icon name="check" type="Feather" size={14} color={Colors.success} />
-                      <Text style={styles.featureText}>Basic tracking</Text>
-                    </View>
-                    <View style={styles.featureItem}>
-                      <Icon name="check" type="Feather" size={14} color={Colors.success} />
-                      <Text style={styles.featureText}>Customer support</Text>
-                    </View>
-                  </View>
-                </View>
-                
-                <View style={styles.divider} />
-                
-                <View style={styles.featureColumn}>
-                  <Text style={styles.columnTitle}>Business</Text>
-                  <View style={styles.featuresList}>
-                    <View style={styles.featureItem}>
-                      <Icon name="check" type="Feather" size={14} color={Colors.success} />
-                      <Text style={styles.featureText}>Everything in Personal</Text>
-                    </View>
-                    <View style={styles.featureItem}>
-                      <Icon name="check" type="Feather" size={14} color={Colors.success} />
-                      <Text style={styles.featureText}>Business invoicing</Text>
-                    </View>
-                    <View style={styles.featureItem}>
-                      <Icon name="check" type="Feather" size={14} color={Colors.success} />
-                      <Text style={styles.featureText}>Expense reporting</Text>
-                    </View>
-                    <View style={styles.featureItem}>
-                      <Icon name="check" type="Feather" size={14} color={Colors.success} />
-                      <Text style={styles.featureText}>Priority support</Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </View>
           </View>
         </ScrollView>
         
         {/* Continue Button */}
         <View style={styles.buttonContainer}>
           <Button
-            title="Complete setup"
+            title={formData.isBusiness ? "Continue to business details" : "Complete setup"}
             onPress={handleNext}
             variant="primary"
             disabled={!isValid}
             style={styles.nextButton}
-            icon={<Icon name="check" type="Feather" size={20} color={Colors.white} />}
+            icon={<Icon name={formData.isBusiness ? "arrow-right" : "check"} type="Feather" size={20} color={Colors.white} />}
           />
         </View>
       </KeyboardAvoidingView>
@@ -405,63 +314,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  businessFields: {
-    gap: 16,
-    marginTop: 16,
-  },
-  inputField: {
-    marginBottom: 0,
-  },
-  featuresCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  featuresHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  featuresTitle: {
-    fontSize: 16,
-    color: Colors.textPrimary,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  featuresComparison: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  featureColumn: {
-    flex: 1,
-  },
-  columnTitle: {
-    fontSize: 14,
-    color: Colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  featuresList: {
-    gap: 8,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  featureText: {
-    fontSize: 12,
-    color: Colors.textPrimary,
-    lineHeight: 16,
-    flex: 1,
-  },
-  divider: {
-    width: 1,
-    backgroundColor: Colors.borderLight,
   },
   buttonContainer: {
     paddingHorizontal: 24,

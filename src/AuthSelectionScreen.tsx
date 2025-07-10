@@ -3,6 +3,7 @@ import { View, StyleSheet, Dimensions, StatusBar, TouchableOpacity, Image } from
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button, Text } from './ui';
+import { Icon } from './ui/Icon';
 import { Colors } from './config/colors';
 import { useTranslation } from './config/i18n';
 import LoginModal from './components/LoginModal';
@@ -100,6 +101,7 @@ const AuthSelectionScreen: React.FC<AuthSelectionScreenProps> = ({
             onPress={handleLoginPress}
             variant="secondary"
             style={styles.secondaryButton}
+            icon={<Icon name="log-in" type="Feather" size={22} color={Colors.primary} />}
           />
         </View>
         
@@ -122,6 +124,7 @@ const AuthSelectionScreen: React.FC<AuthSelectionScreenProps> = ({
         <LoginModal
           visible={isLoginModalVisible}
           onClose={handleLoginModalClose}
+          navigation={navigation}
         />
       )}
     </View>

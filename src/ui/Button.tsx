@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, Text, PressableProps, ViewStyle, TextStyle, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, PressableProps, ViewStyle, TextStyle, ActivityIndicator, View } from 'react-native';
 import Animated, { 
   useAnimatedStyle, 
   withSpring, 
@@ -16,9 +16,9 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../config/colors';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
-interface ButtonProps extends Omit<PressableProps, 'children'> {
+interface ButtonProps {
   title: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
@@ -28,6 +28,8 @@ interface ButtonProps extends Omit<PressableProps, 'children'> {
   pulseOnLoad?: boolean;
   glowEffect?: boolean;
   icon?: React.ReactNode;
+  onPress?: () => void;
+  style?: ViewStyle;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -42,7 +44,6 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   onPress,
   style,
-  ...props
 }) => {
   const [isPressed, setIsPressed] = useState(false);
   
@@ -98,7 +99,7 @@ export const Button: React.FC<ButtonProps> = ({
     });
   };
 
-  const handlePress = (event: any) => {
+  const handlePress = () => {
     if (disabled || loading) return;
     
     // Success animation
@@ -107,7 +108,7 @@ export const Button: React.FC<ButtonProps> = ({
       withSpring(1, { damping: 15, stiffness: 300 })
     );
     
-    onPress?.(event);
+    onPress?.();
   };
 
   // Loading animation effect
@@ -163,7 +164,11 @@ export const Button: React.FC<ButtonProps> = ({
         pressedColor = Colors.primary;
         break;
       }
-      case 'outline':
+      case 'outline': {
+        primaryColor = '#FFFFFF';
+        pressedColor = 'rgba(37, 99, 235, 0.1)';
+        break;
+      }
       case 'ghost': {
         primaryColor = 'transparent';
         pressedColor = 'rgba(37, 99, 235, 0.1)';
@@ -181,37 +186,72 @@ export const Button: React.FC<ButtonProps> = ({
   });
 
   const getButtonStyle = (): ViewStyle => {
+    let backgroundColor = '#fff';
+    let borderColor = 'rgba(0,0,0,0.06)';
+    
+    switch (variant) {
+      case 'primary':
+        backgroundColor = Colors.primary;
+        borderColor = Colors.primary;
+        break;
+      case 'secondary':
+        backgroundColor = '#fff';
+        borderColor = 'rgba(0,0,0,0.06)';
+        break;
+      case 'outline':
+        backgroundColor = '#fff';
+        borderColor = Colors.primary;
+        break;
+      case 'ghost':
+        backgroundColor = 'transparent';
+        borderColor = 'transparent';
+        break;
+    }
+    
     const baseStyle: ViewStyle = {
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'row',
       borderRadius: 24,
-      backgroundColor: variant === 'primary' ? Colors.primary : '#fff',
-      borderWidth: variant === 'outline' ? 2 : 0,
-      borderColor: variant === 'outline' ? Colors.primary : 'transparent',
-      paddingHorizontal: 24,
-      paddingVertical: 16,
-      minHeight: 48,
+      backgroundColor,
+      borderWidth: variant === 'ghost' ? 0 : 1,
+      borderColor,
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      minHeight: 52,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 2,
+      shadowOpacity: variant === 'ghost' ? 0 : 0.06,
+      shadowRadius: 6,
+      elevation: variant === 'ghost' ? 0 : 2,
     };
     return baseStyle;
   };
 
   const getTextStyle = (): TextStyle => {
+    let textColor = Colors.textPrimary;
+    
+    switch (variant) {
+      case 'primary':
+        textColor = '#fff';
+        break;
+      case 'secondary':
+        textColor = isPressed ? '#fff' : Colors.textPrimary;
+        break;
+      case 'outline':
+        textColor = Colors.primary;
+        break;
+      case 'ghost':
+        textColor = Colors.primary;
+        break;
+    }
+    
     const baseStyle: TextStyle = {
-      fontWeight: '700',
+      fontWeight: '600',
       fontSize: 16,
-      color:
-        variant === 'primary'
-          ? '#fff'
-          : variant === 'secondary' && isPressed
-          ? '#fff'
-          : Colors.primary,
+      color: textColor,
       textAlign: 'center',
+      flex: 1,
     };
     return baseStyle;
   };
@@ -225,22 +265,21 @@ export const Button: React.FC<ButtonProps> = ({
         duration: 1000,
         loop: true,
       }}
-      style={{ marginRight: 8 }}
     >
       <ActivityIndicator 
-        size="small" 
-        color={variant === 'outline' || variant === 'ghost' ? Colors.primary : '#FFFFFF'} 
+        size={18} 
+        color={variant === 'primary' ? '#FFFFFF' : Colors.textPrimary} 
       />
     </MotiView>
   );
 
   const ButtonContent = () => (
     <>
-      {icon && !loading && <View style={{ marginRight: 8 }}>{icon}</View>}
-      {loading && <LoadingSpinner />}
+      {icon && !loading && <View style={{ marginRight: 16 }}>{icon}</View>}
       <Text style={getTextStyle()}>
         {loading ? 'Loading...' : title}
       </Text>
+      {loading && <View style={{ marginLeft: 16 }}><LoadingSpinner /></View>}
     </>
   );
 
@@ -266,30 +305,30 @@ export const Button: React.FC<ButtonProps> = ({
           elevation: 4,
         }}
       >
-        <AnimatedPressable
+        <AnimatedTouchableOpacity
           style={[getButtonStyle(), backgroundAnimatedStyle, animatedStyle, style]}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           onPress={handlePress}
           disabled={disabled || loading}
-          {...props}
+          activeOpacity={0.8}
         >
           <ButtonContent />
-        </AnimatedPressable>
+        </AnimatedTouchableOpacity>
       </MotiView>
     );
   }
 
   return (
-    <AnimatedPressable
+    <AnimatedTouchableOpacity
       style={[getButtonStyle(), backgroundAnimatedStyle, animatedStyle, style]}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={handlePress}
       disabled={disabled || loading}
-      {...props}
+      activeOpacity={0.8}
     >
       <ButtonContent />
-    </AnimatedPressable>
+    </AnimatedTouchableOpacity>
   );
 }; 

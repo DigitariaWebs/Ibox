@@ -116,17 +116,22 @@ export const Input: React.FC<InputProps> = ({
   const getInputTextStyle = (): TextStyle => {
     const baseStyle: TextStyle = {
       color: Colors.textPrimary,
+      fontWeight: '400',
+      letterSpacing: 0.2,
     };
 
     switch (size) {
       case 'sm':
         baseStyle.fontSize = 14;
+        baseStyle.lineHeight = 20;
         break;
       case 'md':
         baseStyle.fontSize = 16;
+        baseStyle.lineHeight = 22;
         break;
       case 'lg':
         baseStyle.fontSize = 18;
+        baseStyle.lineHeight = 24;
         break;
     }
 
@@ -154,10 +159,11 @@ export const Input: React.FC<InputProps> = ({
         style={[getInputContainerStyle(), animatedStyle]}
       >
         <TextInput
-          style={getInputTextStyle()}
-          placeholderTextColor="#6B7280" // gray-500
+          style={[getInputTextStyle(), { textAlignVertical: 'center' }]}
+          placeholderTextColor="#9CA3AF" // More precise gray color
           onFocus={handleFocus}
           onBlur={handleBlur}
+          allowFontScaling={false}
           {...props}
         />
       </AnimatedView>

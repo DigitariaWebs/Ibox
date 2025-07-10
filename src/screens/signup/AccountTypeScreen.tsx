@@ -160,7 +160,7 @@ const BenefitItem = ({ icon, text, isSelected }: { icon: string, text: string, i
     <Icon 
       name={icon} 
       type="Feather" 
-      size={16} 
+      size={14} 
       color={isSelected ? Colors.white : Colors.primary} 
       style={styles.benefitIcon} 
     />
@@ -173,7 +173,7 @@ const BenefitItem = ({ icon, text, isSelected }: { icon: string, text: string, i
   </View>
 );
 
-// NEW: Reusable OptionCard component for cleaner markup
+// Enhanced OptionCard component with better UI
 const OptionCard = ({
   type,
   iconName,
@@ -194,46 +194,71 @@ const OptionCard = ({
   onSelect: (t: 'customer' | 'transporter') => void;
 }) => {
   const isSelected = selectedType === type;
+  const isOtherSelected = selectedType !== null && selectedType !== type;
+  
   return (
     <TouchableOpacity
-      style={[styles.selectionCard, isSelected && styles.selectedCard]}
-      activeOpacity={0.8}
+      style={[
+        styles.selectionCard, 
+        isSelected && styles.selectedCard,
+        isOtherSelected && styles.inactiveCard
+      ]}
+      activeOpacity={0.7}
       onPress={() => onSelect(type)}
     >
-      {/* First Row (icon + title + tagline) */}
-      <View style={styles.cardRow}>
+      {/* Header Row */}
+      <View style={styles.cardHeader}>
         <View style={[styles.cardIcon, isSelected && styles.selectedCardIcon]}>
           <Icon
             name={iconName}
             type="Feather"
-            size={32}
+            size={28}
             color={isSelected ? Colors.white : Colors.primary}
           />
         </View>
-        <View style={styles.cardTextContainer}>
-          <Text style={[styles.cardTitle, isSelected && styles.selectedCardTitle]}>{title}</Text>
-          <Text style={[styles.cardTagline, isSelected && styles.selectedCardTagline]}>{tagline}</Text>
+        <View style={styles.cardHeaderText}>
+          <Text style={[styles.cardTitle, isSelected && styles.selectedCardTitle]}>
+            {title}
+          </Text>
+          <Text style={[styles.cardTagline, isSelected && styles.selectedCardTagline]}>
+            {tagline}
+          </Text>
+        </View>
+        
+        {/* Selection indicator */}
+        <View style={[styles.selectionIndicator, isSelected && styles.selectedIndicator]}>
+          {isSelected && <Icon name="check" type="Feather" size={16} color={Colors.white} />}
         </View>
       </View>
 
-      {/* Expanded section visible only if selected */}
-      {isSelected && (
-        <>
-          <Text style={[styles.cardDescription, styles.expandedDescription]}>{longDescription}</Text>
-          <View style={styles.cardBenefits}>
-            {benefits.map((b, idx) => (
-              <BenefitItem key={idx} icon="check-circle" text={b} isSelected={isSelected} />
-            ))}
-          </View>
-        </>
-      )}
+      {/* Description - Always visible but shortened for non-selected */}
+      <Text style={[
+        styles.cardDescription, 
+        isSelected && styles.selectedCardDescription,
+        isOtherSelected && styles.inactiveDescription
+      ]}>
+        {isSelected ? longDescription : longDescription.substring(0, 100) + '...'}
+      </Text>
 
-      {/* Checkmark */}
-      {isSelected && (
-        <View style={styles.checkmark}>
-          <Icon name="check" type="Feather" size={20} color={Colors.white} />
-        </View>
-      )}
+      {/* Benefits - Always show at least 2, all when selected */}
+      <View style={styles.cardBenefits}>
+        {benefits.slice(0, isSelected ? benefits.length : 2).map((benefit, idx) => (
+          <BenefitItem 
+            key={idx} 
+            icon="check-circle" 
+            text={benefit} 
+            isSelected={isSelected} 
+          />
+        ))}
+        {!isSelected && benefits.length > 2 && (
+          <Text style={styles.moreBenefits}>
+            +{benefits.length - 2} more benefits
+          </Text>
+        )}
+      </View>
+
+      {/* Selected overlay */}
+      {isSelected && <View style={styles.selectedOverlay} />}
     </TouchableOpacity>
   );
 };
@@ -272,7 +297,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   titleContainer: {
-    marginBottom: 30,
+    marginBottom: 32,
   },
   title: {
     fontSize: 32,
@@ -288,115 +313,64 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   selectionContainer: {
-    flex: 1,
-    gap: 20,
+    gap: 24,
   },
   selectionCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 24,
     borderWidth: 2,
     borderColor: Colors.borderLight,
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowRadius: 16,
+    elevation: 6,
     position: 'relative',
-    marginBottom: 16,
+    overflow: 'hidden',
+    transform: [{ scale: 1 }],
   },
   selectedCard: {
     borderColor: Colors.primary,
     backgroundColor: Colors.primary,
     shadowColor: Colors.primary,
     shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowRadius: 20,
+    elevation: 8,
+    transform: [{ scale: 1.02 }],
+  },
+  inactiveCard: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   cardIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: 'rgba(10, 165, 168, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginRight: 16,
   },
   selectedCardIcon: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
-  cardContent: {
+  cardHeaderText: {
     flex: 1,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 20,
     color: Colors.textPrimary,
-    marginBottom: 10,
-    fontWeight: 'bold',
+    marginBottom: 4,
+    fontWeight: '700',
   },
   selectedCardTitle: {
     color: Colors.white,
-    fontWeight: 'bold',
-  },
-  cardDescription: {
-    fontSize: 15,
-    color: Colors.white,
-    lineHeight: 22,
-    fontWeight: '400',
-    marginBottom: 16,
-  },
-  selectedCardDescription: {
-    color: Colors.white,
-    fontWeight: '400',
-  },
-  cardBenefits: {
-    marginTop: 10,
-  },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  benefitIcon: {
-    marginRight: 8,
-  },
-  benefitText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  selectedBenefitText: {
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  checkmark: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonContainer: {
-    paddingTop: 20,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
-  },
-  nextButton: {
-    width: '100%',
-    height: 56,
-    borderRadius: 28,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  cardTextContainer: {
-    flex: 1,
-    marginLeft: 16,
   },
   cardTagline: {
     fontSize: 14,
@@ -406,8 +380,76 @@ const styles = StyleSheet.create({
   selectedCardTagline: {
     color: 'rgba(255, 255, 255, 0.9)',
   },
-  expandedDescription: {
-    marginBottom: 12,
+  selectionIndicator: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: Colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  selectedIndicator: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  cardDescription: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    lineHeight: 22,
+    marginBottom: 16,
+    fontWeight: '400',
+  },
+  selectedCardDescription: {
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  inactiveDescription: {
+    opacity: 0.7,
+  },
+  cardBenefits: {
+    gap: 8,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  benefitIcon: {
+    marginRight: 8,
+  },
+  benefitText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+    flex: 1,
+  },
+  selectedBenefitText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  moreBenefits: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  selectedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  buttonContainer: {
+    paddingTop: 24,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+  },
+  nextButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
   },
 });
 

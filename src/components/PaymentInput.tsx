@@ -188,9 +188,9 @@ export const PaymentInput: React.FC<PaymentInputProps> = ({
         },
       ]}>
         <LinearGradient
-          colors={['#667eea', '#764ba2']}
+          colors={[Colors.white, Colors.primary]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 0, y: 1 }}
           style={styles.cardGradient}
         >
           <View style={styles.cardFront}>
@@ -238,9 +238,9 @@ export const PaymentInput: React.FC<PaymentInputProps> = ({
           },
         ]}>
           <LinearGradient
-            colors={['#667eea', '#764ba2']}
+            colors={[Colors.white, Colors.primary]}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            end={{ x: 0, y: 1 }}
             style={styles.cardGradient}
           >
             <View style={styles.magneticStripe} />
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   cardNumber: {
     fontSize: 22,
-    color: Colors.white,
+    color: Colors.textPrimary,
     fontFamily: 'monospace',
     letterSpacing: 2,
     fontWeight: '500',
@@ -382,14 +382,14 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(31, 41, 55, 0.7)',
     fontWeight: '600',
     letterSpacing: 1,
     marginBottom: 4,
   },
   cardValue: {
     fontSize: 14,
-    color: Colors.white,
+    color: Colors.textPrimary,
     fontWeight: '600',
     letterSpacing: 1,
   },
@@ -407,6 +407,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    transform: [{ scaleX: -1 }],
   },
   cvvLabel: {
     fontSize: 12,

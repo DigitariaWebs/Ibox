@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "IBox",
-    "slug": "IBox",
+    "name": "iBox",
+    "slug": "ibox",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -13,21 +13,40 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses location to provide better delivery services"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA_jfjSKfrdU9J7w0AezzFhsNvZUc4Uvj8"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/images/logo-icon.png"
     },
     "plugins": [
       "expo-router",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Allow $(PRODUCT_NAME) to use your location for better service delivery"
+        }
+      ]
+    ],
+    "platforms": [
+      "ios",
+      "android"
     ]
   }
 }

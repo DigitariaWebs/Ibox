@@ -27,8 +27,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const colorTransition = useRef(new Animated.Value(0)).current;
   
-  const logoOpacity = new Animated.Value(0);
-  const logoTranslateY = new Animated.Value(-50);
   const textOpacity = new Animated.Value(0);
   const textTranslateY = new Animated.Value(30);
   const buttonOpacity = new Animated.Value(0);
@@ -37,19 +35,20 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
   const slides: OnboardingSlide[] = [
     {
       id: 1,
+      //i want to make ship more aggrasive
       title: "Ship anything \nwith a single tap.",
       specialWord: "anything",
       specialWordIndex: 1,
       buttonText: "Let's Go",
       colors: ['#0AA5A8', '#4DC5C8', '#7B68EE', '#9370DB'],
-      showButton: true,
+      showButton: false,
     },
     {
       id: 2,
       title: "Track every parcel \nlive to your door.",
       specialWord: "live",
       specialWordIndex: 3,
-      colors: ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'],
+      colors: ['#0AA5A8', '#4DC5C8', '#7B68EE', '#9370DB'],
       showButton: false,
     },
     {
@@ -58,15 +57,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
       specialWord: "all",
       specialWordIndex: 4,
       buttonText: "Get Started",
-      colors: ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'],
+      colors: ['#0AA5A8', '#4DC5C8', '#7B68EE', '#9370DB'],
       showButton: true,
     },
   ];
 
   const animateSlideEntrance = () => {
     // Reset animations
-    logoOpacity.setValue(0);
-    logoTranslateY.setValue(-50);
     textOpacity.setValue(0);
     textTranslateY.setValue(30);
     buttonOpacity.setValue(0);
@@ -74,21 +71,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
 
     // Staggered entrance animations
     Animated.sequence([
-      // Logo animation
-      Animated.parallel([
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 800,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoTranslateY, {
-          toValue: 0,
-          duration: 800,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]),
       // Text animation (after 200ms delay)
       Animated.parallel([
         Animated.timing(textOpacity, {
@@ -215,9 +197,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
   }, [currentSlide]);
 
   const renderTitle = (title: string, specialWord?: string, specialWordIndex?: number) => {
-    const isWhiteBackground = currentSlide > 0;
-    const titleStyle = isWhiteBackground ? styles.titleDark : styles.title;
-    const emphasisStyle = isWhiteBackground ? styles.titleEmphasisDark : styles.titleEmphasis;
+    const titleStyle = styles.title;
+    const emphasisStyle = styles.titleEmphasis;
 
     if (!specialWord || specialWordIndex === undefined) {
       return (
@@ -243,8 +224,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
                 weight="bold"
                 style={[
                   emphasisStyle,
-                  isSpecialWord && styles.specialFont,
-                  isSpecialWord && isWhiteBackground && styles.specialFontDark
+                  isSpecialWord && styles.specialFont
                 ]}
               >
                 {cleanWord}
@@ -284,21 +264,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
         style={StyleSheet.absoluteFillObject}
       />
       
-      {/* Animated white overlay for transition effect */}
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFillObject,
-          {
-            backgroundColor: '#FFFFFF',
-            opacity: colorTransition.interpolate({
-              inputRange: [0, 0.3, 1],
-              outputRange: [0, 0, 1],
-              extrapolate: 'clamp',
-            }),
-          },
-        ]}
-      />
-      
       {/* Gradient fade-out effect */}
       <Animated.View
         style={[
@@ -320,6 +285,15 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
         />
       </Animated.View>
 
+      {/* Fixed Logo (not animated, always visible) */}
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('../assets/images/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       <Animated.View
         style={[
           styles.slideContainer,
@@ -329,23 +303,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
         ]}
         {...panResponder.panHandlers}
       >
-        {/* Logo */}
-        <Animated.View
-          style={[
-            styles.logoContainer,
-            {
-              opacity: logoOpacity,
-              transform: [{ translateY: logoTranslateY }],
-            },
-          ]}
-        >
-          <Image
-            source={require('../assets/images/logo.png')}
-            style={[styles.logo, currentSlide > 0 && styles.logoDark]}
-            resizeMode="contain"
-          />
-        </Animated.View>
-
         {/* Main Content */}
         <Animated.View
           style={[
@@ -377,8 +334,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
             <Button
               title={currentSlideData.buttonText ?? ''}
               onPress={nextSlide}
-              variant={currentSlide > 0 ? "primary" : "primary"}
-              style={currentSlide > 0 ? [styles.button, styles.buttonDark] : styles.button}
+              variant={"primary"}
+              style={styles.button}
             />
           </Animated.View>
         )}
@@ -390,9 +347,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
               key={index}
               style={[
                 styles.progressDot,
-                currentSlide > 0 && styles.progressDotDark,
                 index === currentSlide && styles.progressDotActive,
-                index === currentSlide && currentSlide > 0 && styles.progressDotActiveDark,
               ]}
             />
           ))}
@@ -416,14 +371,14 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
+    marginTop: 60,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 150,
+    height: 150,
     tintColor: Colors.white,
-  },
-  logoDark: {
-    tintColor: Colors.primary,
+    //center the logo
+    alignSelf: 'center',
   },
   contentContainer: {
     flex: 1,
@@ -432,38 +387,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    fontSize: 42,
-    lineHeight: 50,
+    fontSize: 54,
+    lineHeight: 62,
     textAlign: 'center',
     color: Colors.white,
-    letterSpacing: -0.5,
-  },
-  titleDark: {
-    fontSize: 42,
-    lineHeight: 50,
-    textAlign: 'center',
-    color: Colors.primary,
     letterSpacing: -0.5,
   },
   titleEmphasis: {
-    fontSize: 42,
+    fontSize: 54,
     fontStyle: 'italic',
     color: Colors.white,
-  },
-  titleEmphasisDark: {
-    fontSize: 42,
-    fontStyle: 'italic',
-    color: Colors.primary,
   },
   //change font
   specialFont: {
     fontFamily: Fonts.PlayfairDisplay.Variable,
     fontStyle: 'normal', // Override the italic style
-    fontSize: 48, // Slightly larger to make it more prominent
+    fontSize: 60, // Slightly larger to make it more prominent
     letterSpacing: 1, // Add some letter spacing for elegance
-  },
-  specialFontDark: {
-    color: Colors.primary,
   },
   buttonContainer: {
     width: '100%',
@@ -474,10 +414,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.white,
     minHeight: 56,
-  },
-  buttonDark: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -490,17 +426,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  progressDotDark: {
-    backgroundColor: 'rgba(10, 165, 168, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   progressDotActive: {
-    backgroundColor: Colors.white,
+    backgroundColor: '#FFFFFF',
     width: 24,
-  },
-  progressDotActiveDark: {
-    backgroundColor: Colors.primary,
   },
 });
 

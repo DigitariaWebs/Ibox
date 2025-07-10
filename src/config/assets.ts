@@ -16,4 +16,14 @@ export const Images = {
   // hero: require("../../assets/images/hero.png"),
 } as const;
 
-export type ImageKey = keyof typeof Images; 
+export const PaymentLogos = {
+  visa: require("../../assets/images/logos/visa.png"),
+  mastercard: require("../../assets/images/logos/mastercard.png"),
+  amex: require("../../assets/images/logos/amex.png"),
+  apple: require("../../assets/images/logos/apple.png"),
+  gpay: require("../../assets/images/logos/gpay.png"),
+  stripe: require("../../assets/images/logos/stripe.png"),
+} as const;
+
+export type ImageKey = keyof typeof Images;
+export type PaymentLogoKey = keyof typeof PaymentLogos; 

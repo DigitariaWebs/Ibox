@@ -2,13 +2,14 @@ import './global.css';
 import React from 'react';
 import { SafeAreaView, ScrollView, View, Alert, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { MotiView } from 'moti';
 import * as Font from 'expo-font';
 import { fontAssets, Fonts } from './src/config/fonts';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Button, Text, SearchInput, Card, Input, Icon, BottomNavbar1 } from './src/ui';
+import { Button, Text, SearchInput, Card, Input, Icon } from './src/ui';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './src/store/store';
 import LanguageSelectionScreen from './src/LanguageSelectionScreen';
@@ -17,6 +18,8 @@ import { RootState } from './src/store/store';
 import LoadingScreen from './src/LoadingScreen';
 import OnboardingScreen from './src/OnboardingScreen';
 import LoginScreen from './src/LoginScreen';
+import HomeScreen from './src/HomeScreen';
+import SettingsScreen from './src/SettingsScreen';
 import { SignUpProvider } from './src/contexts/SignUpContext';
 import OnboardingEntryScreen from './src/screens/signup/OnboardingEntryScreen';
 import AccountTypeScreen from './src/screens/signup/AccountTypeScreen';
@@ -26,10 +29,22 @@ import AddressLocaleScreen from './src/screens/signup/AddressLocaleScreen';
 import CustomerExtrasScreen from './src/screens/signup/CustomerExtrasScreen';
 import PaymentMethodScreen from './src/screens/signup/PaymentMethodScreen';
 import CustomerAccountTypeScreen from './src/screens/signup/CustomerAccountTypeScreen';
+import BusinessDetailsScreen from './src/screens/signup/BusinessDetailsScreen';
 import TransporterVehicleScreen from './src/screens/signup/TransporterVehicleScreen';
 import TransporterComplianceScreen from './src/screens/signup/TransporterComplianceScreen';
 import TransporterBankingScreen from './src/screens/signup/TransporterBankingScreen';
 import ConfirmationScreen from './src/screens/signup/ConfirmationScreen';
+import MapScreen from './src/screens/MapScreen';
+import PersonalInfoScreen from './src/screens/PersonalInfoScreen';
+import AddressesScreen from './src/screens/AddressesScreen';
+import PaymentMethodsScreen from './src/screens/PaymentMethodsScreen';
+import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
+import HelpSupportScreen from './src/screens/HelpSupportScreen';
+import AboutScreen from './src/screens/AboutScreen';
+import ColisScreen from './src/screens/services/ColisScreen';
+import DemenagementScreen from './src/screens/services/DemenagementScreen';
+import StockageScreen from './src/screens/services/StockageScreen';
+import ExpressScreen from './src/screens/services/ExpressScreen';
 
 // Import store and actions
 import { increment, decrement, incrementByAmount } from './src/store/store';
@@ -96,55 +111,6 @@ const IconShowcase: React.FC = () => (
 
 const Stack = createNativeStackNavigator();
 
-export const HomeScreen: React.FC<any> = ({ navigation }) => {
-  const count = useSelector((state: RootState) => state.counter.value);
-  const dispatch = useDispatch();
-  return (
-    <ScrollView style={{ flex: 1 }}>
-      <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
-        <Text variant="h1" weight="bold" align="center" color="primary" style={{ marginBottom: 8 }}>
-          Home
-        </Text>
-        <Button
-          title="Go to Settings"
-          icon={<Icon name="settings" type="Feather" color="#fff" size={20} />}
-          onPress={() => navigation.navigate('Settings')}
-          style={{ marginBottom: 24 }}
-        />
-        <Text variant="h3" weight="semibold" style={{ marginBottom: 16 }}>
-          Redux Counter
-        </Text>
-        <View style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 24, alignItems: 'center' }}>
-          <Text variant="h2" weight="bold" color="primary" style={{ marginBottom: 16 }}>
-            {count}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-            <Button title="Increment" onPress={() => dispatch(increment())} variant="primary" size="sm" />
-            <Button title="Decrement" onPress={() => dispatch(decrement())} variant="secondary" size="sm" />
-          </View>
-          <Button title="+5" onPress={() => dispatch(incrementByAmount(5))} variant="outline" size="sm" />
-        </View>
-      </View>
-    </ScrollView>
-  );
-};
-
-export const SettingsScreen: React.FC<any> = ({ navigation }) => (
-  <ScrollView style={{ flex: 1 }}>
-    <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
-      <Text variant="h1" weight="bold" align="center" color="primary" style={{ marginBottom: 8 }}>
-        Settings
-      </Text>
-      <Button
-        title="Change Language"
-        icon={<Icon name="globe" type="Feather" color="#fff" size={20} />}
-        onPress={() => navigation.navigate('LanguageSelection')}
-        style={{ marginTop: 24 }}
-      />
-    </View>
-  </ScrollView>
-);
-
 const RootNavigator = () => {
   const language = useSelector((state: RootState) => state.language.value);
   return (
@@ -160,13 +126,108 @@ const RootNavigator = () => {
         <Stack.Screen name="AddressLocaleScreen" component={AddressLocaleScreen} />
         <Stack.Screen name="PaymentMethodScreen" component={PaymentMethodScreen} />
         <Stack.Screen name="CustomerAccountTypeScreen" component={CustomerAccountTypeScreen} />
+        <Stack.Screen name="BusinessDetailsScreen" component={BusinessDetailsScreen} />
         <Stack.Screen name="CustomerExtrasScreen" component={CustomerExtrasScreen} />
         <Stack.Screen name="TransporterVehicleScreen" component={TransporterVehicleScreen} />
         <Stack.Screen name="TransporterComplianceScreen" component={TransporterComplianceScreen} />
         <Stack.Screen name="TransporterBankingScreen" component={TransporterBankingScreen} />
         <Stack.Screen name="ConfirmationScreen" component={ConfirmationScreen} />
         <Stack.Screen name="HomeScreen" component={HomeScreen} />
-        <Stack.Screen name="Main" component={BottomNavbar1} />
+        <Stack.Screen 
+          name="Settings" 
+          component={SettingsScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen 
+          name="MapScreen" 
+          component={MapScreen}
+          options={{
+            presentation: 'transparentModal',
+            animation: 'none',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="PersonalInfo" 
+          component={PersonalInfoScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="Addresses" 
+          component={AddressesScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="PaymentMethods" 
+          component={PaymentMethodsScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="OrderHistory" 
+          component={OrderHistoryScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="HelpSupport" 
+          component={HelpSupportScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="About" 
+          component={AboutScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="ColisService" 
+          component={ColisScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="DemenagementScreen"
+          component={DemenagementScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="StockageScreen"
+          component={StockageScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ExpressScreen"
+          component={ExpressScreen}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -179,32 +240,40 @@ export default function App() {
   
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
-        <ActivityIndicator size="large" color="#0AA5A8" />
-        <Text style={{ marginTop: 16 }}>Loading fonts...</Text>
-      </View>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+          <ActivityIndicator size="large" color="#0AA5A8" />
+          <Text style={{ marginTop: 16 }}>Loading fonts...</Text>
+        </View>
+      </GestureHandlerRootView>
     );
   }
 
   if (!appReady) {
     return (
-      <LoadingScreen onLoadingComplete={() => setAppReady(true)} />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <LoadingScreen onLoadingComplete={() => setAppReady(true)} />
+      </GestureHandlerRootView>
     );
   }
 
   if (!onboardingComplete) {
     return (
-      <OnboardingScreen onGetStarted={() => setOnboardingComplete(true)} />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <OnboardingScreen onGetStarted={() => setOnboardingComplete(true)} />
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <SignUpProvider>
-          <RootNavigator />
-        </SignUpProvider>
-      </PersistGate>
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <SignUpProvider>
+            <RootNavigator />
+          </SignUpProvider>
+        </PersistGate>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }
