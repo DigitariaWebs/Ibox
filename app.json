@@ -14,8 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.ibox.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses location to provide better delivery services"
+        "NSLocationWhenInUseUsageDescription": "This app uses location to provide better delivery services",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to provide better delivery services",
+        "UIBackgroundModes": ["location", "fetch"]
+      },
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
@@ -24,9 +30,15 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
+      "package": "com.ibox.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyA_jfjSKfrdU9J7w0AezzFhsNvZUc4Uvj8"
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
         }
       }
     },
@@ -41,6 +53,14 @@
         {
           "requestLocationPermission": true,
           "locationPermission": "Allow $(PRODUCT_NAME) to use your location for better service delivery"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location for better service delivery.",
+          "locationAlwaysPermission": "Allow $(PRODUCT_NAME) to use your location for better service delivery.",
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location for better service delivery."
         }
       ]
     ],

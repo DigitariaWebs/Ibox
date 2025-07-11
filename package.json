@@ -36,7 +36,7 @@
     "react": "19.0.0",
     "react-native": "0.79.4",
     "react-native-gesture-handler": "^2.27.1",
-    "react-native-maps": "^1.24.3",
+    "react-native-maps": "1.20.1",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.11.1",
@@ -45,7 +45,8 @@
     "react-native-webview": "13.13.5",
     "react-redux": "^9.1.2",
     "redux-persist": "^6.0.0",
-    "yup": "^1.6.1"
+    "yup": "^1.6.1",
+    "expo-location": "~18.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
