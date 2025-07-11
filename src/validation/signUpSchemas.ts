@@ -159,25 +159,14 @@ export const transporterComplianceSchema = Yup.object().shape({
     .oneOf([true], 'You must consent to background check'),
 });
 
-// Step 6-b: Transporter Banking
+// Step 6-b: Transporter Banking (Canadian banking - routing + account only)
 export const transporterBankingSchema = Yup.object().shape({
-  bankIban: Yup.string()
-    .matches(/^[A-Z]{2}\d{2}[A-Z0-9]{4,}$/, 'Please enter a valid IBAN')
-    .optional(),
   bankRouting: Yup.string()
     .matches(/^\d{9}$/, 'Routing number must be 9 digits')
-    .when('bankIban', {
-      is: (value: string) => !value,
-      then: (schema) => schema.required('Routing number is required when IBAN is not provided'),
-      otherwise: (schema) => schema.optional(),
-    }),
+    .required('Routing number is required'),
   bankAccount: Yup.string()
     .min(4, 'Account number must be at least 4 digits')
-    .when('bankIban', {
-      is: (value: string) => !value,
-      then: (schema) => schema.required('Account number is required when IBAN is not provided'),
-      otherwise: (schema) => schema.optional(),
-    }),
+    .required('Account number is required'),
   bankHolder: Yup.string()
     .min(2, 'Account holder name must be at least 2 characters')
     .required('Account holder name is required'),

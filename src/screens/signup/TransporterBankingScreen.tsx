@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,11 +9,35 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Modal,
+  FlatList,
+  TextInput as RNTextInput,
+  Alert,
+  Text,
+  Image,
 } from 'react-native';
-import { Button, Text, Icon, Input } from '../../ui';
+import { Button, Icon, Input } from '../../ui';
 import { Colors } from '../../config/colors';
 import { useSignUp } from '../../contexts/SignUpContext';
 import { transporterBankingSchema } from '../../validation/signUpSchemas';
+import * as ImagePicker from 'expo-image-picker';
+import { Images } from '../../config/assets';
+
+// Move BANKS array to the top of the file, before the component
+const BANKS = [
+  'Banque Royale du Canada (RBC)',
+  'Banque de Montréal (BMO)',
+  'Banque Scotia (Scotiabank)',
+  'Banque Toronto-Dominion (TD Canada Trust)',
+  'Banque Nationale du Canada (BNC)',
+  'CIBC (Banque Canadienne Impériale de Commerce)',
+  'Desjardins (Mouvement Desjardins)',
+  'HSBC Bank Canada',
+  'Laurentienne Banque du Canada',
+  'Canadian Western Bank (CWB)',
+  'EQ Bank',
+  'Tangerine Bank',
+];
 
 interface TransporterBankingScreenProps {
   navigation: any;
@@ -30,7 +54,7 @@ const TransporterBankingScreen: React.FC<TransporterBankingScreenProps> = ({ nav
   const { signUpData, updateSignUpData, setCurrentStep } = useSignUp();
   
   const [formData, setFormData] = useState<FormData>({
-    bankIban: signUpData.bankIban || '',
+    bankIban: '',
     bankRouting: signUpData.bankRouting || '',
     bankAccount: signUpData.bankAccount || '',
     bankHolder: signUpData.bankHolder || '',
@@ -38,15 +62,43 @@ const TransporterBankingScreen: React.FC<TransporterBankingScreenProps> = ({ nav
   
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isValid, setIsValid] = useState(false);
-  const [useIban, setUseIban] = useState(!!formData.bankIban);
+  const [isFormComplete, setIsFormComplete] = useState(false);
+  const [selectedBank, setSelectedBank] = useState('');
+  const [bankModalVisible, setBankModalVisible] = useState(false);
+  const [bankSearch, setBankSearch] = useState('');
+  const [chequeImage, setChequeImage] = useState('');
 
   useEffect(() => {
     validateForm();
   }, [formData]);
 
+  useEffect(() => {
+    checkFormComplete();
+  }, [formData, selectedBank, chequeImage, isValid]);
+
+  const checkFormComplete = () => {
+    const complete = isValid && selectedBank && chequeImage;
+    console.log('Form validation check:', {
+      isValid,
+      selectedBank,
+      chequeImage: !!chequeImage,
+      formData,
+      complete
+    });
+    setIsFormComplete(complete);
+  };
+
   const validateForm = async () => {
     try {
-      await transporterBankingSchema.validate(formData, { abortEarly: false });
+      // Only validate the fields we're using (routing + account + holder)
+      const validationData = {
+        bankRouting: formData.bankRouting,
+        bankAccount: formData.bankAccount,
+        bankHolder: formData.bankHolder,
+      };
+      
+      await transporterBankingSchema.validate(validationData, { abortEarly: false });
+      console.log('Validation passed for:', validationData);
       setErrors({});
       setIsValid(true);
     } catch (validationErrors: any) {
@@ -54,6 +106,7 @@ const TransporterBankingScreen: React.FC<TransporterBankingScreenProps> = ({ nav
       validationErrors.inner?.forEach((error: any) => {
         errorObj[error.path as keyof FormData] = error.message;
       });
+      console.log('Validation errors:', errorObj);
       setErrors(errorObj);
       setIsValid(false);
     }
@@ -64,44 +117,63 @@ const TransporterBankingScreen: React.FC<TransporterBankingScreenProps> = ({ nav
   };
 
   const handleNext = () => {
-    if (isValid) {
-      updateSignUpData({
-        bankIban: formData.bankIban,
-        bankRouting: formData.bankRouting,
-        bankAccount: formData.bankAccount,
-        bankHolder: formData.bankHolder,
-      });
-      setCurrentStep(8);
-      navigation.navigate('ConfirmationScreen');
+    if (!isFormComplete) {
+      if (!selectedBank) {
+        Alert.alert('Incomplete', 'Please select your bank.');
+        return;
+      }
+      if (!chequeImage) {
+        Alert.alert('Incomplete', 'Please select a photo of your specimen cheque.');
+        return;
+      }
+      if (!isValid) {
+        Alert.alert('Incomplete', 'Please complete all required fields.');
+        return;
+      }
     }
+    
+    updateSignUpData({
+      bankRouting: formData.bankRouting,
+      bankAccount: formData.bankAccount,
+      bankHolder: formData.bankHolder,
+    });
+    setCurrentStep(8);
+    navigation.navigate('ConfirmationScreen');
   };
 
   const handleBack = () => {
     navigation.goBack();
   };
 
-  const toggleBankingMethod = (value: boolean) => {
-    setUseIban(value);
-    if (value) {
-      // Clear routing and account when switching to IBAN
-      updateField('bankRouting', '');
-      updateField('bankAccount', '');
-    } else {
-      // Clear IBAN when switching to routing/account
-      updateField('bankIban', '');
+
+  const selectChequeImage = async () => {
+    try {
+      // Request permissions first
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Sorry, we need camera roll permissions to select images.');
+        return;
+      }
+
+      console.log('Opening image picker...');
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      console.log('Image picker result:', result);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setChequeImage(result.assets[0].uri);
+        console.log('Image selected:', result.assets[0].uri);
+      } else {
+        console.log('Image selection canceled or no assets');
+      }
+    } catch (error) {
+      console.error('Error selecting image:', error);
+      Alert.alert('Error', 'Failed to select image. Please try again.');
     }
-  };
-
-  const formatIban = (value: string) => {
-    // Remove spaces and convert to uppercase
-    const cleaned = value.replace(/\s/g, '').toUpperCase();
-    // Add spaces every 4 characters for display
-    return cleaned.replace(/(.{4})/g, '$1 ').trim();
-  };
-
-  const handleIbanChange = (value: string) => {
-    const formatted = formatIban(value);
-    updateField('bankIban', formatted);
   };
 
   return (
@@ -136,105 +208,137 @@ const TransporterBankingScreen: React.FC<TransporterBankingScreenProps> = ({ nav
               </Text>
             </View>
             
-            {/* Banking Method Toggle */}
+            
+            {/* Banking Details Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Icon name="credit-card" type="Feather" size={20} color={Colors.primary} />
-                <Text style={styles.sectionTitle}>Banking Method</Text>
+                <Icon name="home" type="Feather" size={20} color={Colors.primary} />
+                <Text style={styles.sectionTitle}>Select Your Bank</Text>
               </View>
-              
-              <View style={styles.sectionContent}>
-                <View style={styles.toggleContainer}>
-                  <View style={styles.toggleOption}>
-                    <View style={styles.toggleContent}>
-                      <Text style={styles.toggleLabel}>IBAN</Text>
-                      <Text style={styles.toggleDescription}>
-                        International Bank Account Number (Europe)
-                      </Text>
-                    </View>
-                    <Switch
-                      value={useIban}
-                      onValueChange={toggleBankingMethod}
-                      trackColor={{ false: Colors.border, true: Colors.primary }}
-                      thumbColor={Colors.white}
-                      ios_backgroundColor={Colors.border}
-                    />
+              <TouchableOpacity
+                style={[styles.dropdownInput, !selectedBank && { borderColor: Colors.error }]}
+                onPress={() => setBankModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={{ color: selectedBank ? Colors.textPrimary : Colors.textSecondary }}>
+                  {selectedBank || 'Choose a bank'}
+                </Text>
+                <Icon name="chevron-down" type="Feather" size={20} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Bank Modal */}
+            <Modal
+              visible={bankModalVisible}
+              animationType="slide"
+              transparent
+              onRequestClose={() => setBankModalVisible(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Select Your Bank</Text>
+                    <TouchableOpacity onPress={() => setBankModalVisible(false)}>
+                      <Icon name="x" type="Feather" size={24} color={Colors.textPrimary} />
+                    </TouchableOpacity>
                   </View>
-                  
-                  <View style={styles.toggleOption}>
-                    <View style={styles.toggleContent}>
-                      <Text style={styles.toggleLabel}>Routing + Account</Text>
-                      <Text style={styles.toggleDescription}>
-                        US banking details (Routing & Account numbers)
-                      </Text>
-                    </View>
-                    <Switch
-                      value={!useIban}
-                      onValueChange={(value) => toggleBankingMethod(!value)}
-                      trackColor={{ false: Colors.border, true: Colors.primary }}
-                      thumbColor={Colors.white}
-                      ios_backgroundColor={Colors.border}
-                    />
-                  </View>
+                  <RNTextInput
+                    style={styles.searchInput}
+                    placeholder="Search bank..."
+                    value={bankSearch}
+                    onChangeText={setBankSearch}
+                    placeholderTextColor={Colors.textSecondary}
+                  />
+                  <Text style={{ color: 'red', marginBottom: 8 }}>
+                    Banks found: {BANKS.filter(b => b.toLowerCase().includes(bankSearch.toLowerCase())).length}
+                  </Text>
+                  <FlatList
+                    data={BANKS.filter(b => b.toLowerCase().includes(bankSearch.toLowerCase()))}
+                    keyExtractor={item => item}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.bankItem}
+                        onPress={() => {
+                          setSelectedBank(item);
+                          setBankModalVisible(false);
+                          setBankSearch('');
+                        }}
+                      >
+                        <Text style={styles.bankItemText}>{item}</Text>
+                        {selectedBank === item && (
+                          <Icon name="check" type="Feather" size={18} color={Colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                    style={{ maxHeight: 300, width: '100%' }}
+                  />
                 </View>
               </View>
-            </View>
+            </Modal>
             
             {/* Banking Details Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Icon name="dollar-sign" type="Feather" size={20} color={Colors.primary} />
-                <Text style={styles.sectionTitle}>
-                  {useIban ? 'IBAN Details' : 'Account Details'}
-                </Text>
+                <Text style={styles.sectionTitle}>Account Details</Text>
               </View>
               
               <View style={styles.sectionContent}>
-                {useIban ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Icon name="hash" type="Feather" size={20} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                   <Input
-                    placeholder="IBAN (e.g., GB82 WEST 1234 5698 7654 32)"
-                    value={formData.bankIban}
-                    onChangeText={handleIbanChange}
-                    error={errors.bankIban}
-                    leftIcon={<Icon name="credit-card" type="Feather" size={20} color={Colors.textSecondary} />}
+                    placeholder="Routing number (9 digits)"
+                    value={formData.bankRouting}
+                    onChangeText={(value) => updateField('bankRouting', value)}
+                    error={errors.bankRouting}
+                    keyboardType="numeric"
+                    maxLength={9}
                     style={styles.inputField}
-                    autoCapitalize="characters"
                   />
-                ) : (
-                  <>
-                    <Input
-                      placeholder="Routing number (9 digits)"
-                      value={formData.bankRouting}
-                      onChangeText={(value) => updateField('bankRouting', value)}
-                      error={errors.bankRouting}
-                      leftIcon={<Icon name="hash" type="Feather" size={20} color={Colors.textSecondary} />}
-                      keyboardType="numeric"
-                      maxLength={9}
-                      style={styles.inputField}
-                    />
-                    
-                    <Input
-                      placeholder="Account number"
-                      value={formData.bankAccount}
-                      onChangeText={(value) => updateField('bankAccount', value)}
-                      error={errors.bankAccount}
-                      leftIcon={<Icon name="credit-card" type="Feather" size={20} color={Colors.textSecondary} />}
-                      keyboardType="numeric"
-                      style={styles.inputField}
-                    />
-                  </>
-                )}
+                </View>
                 
-                <Input
-                  placeholder="Account holder name"
-                  value={formData.bankHolder}
-                  onChangeText={(value) => updateField('bankHolder', value)}
-                  error={errors.bankHolder}
-                  leftIcon={<Icon name="user" type="Feather" size={20} color={Colors.textSecondary} />}
-                  style={styles.inputField}
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Icon name="credit-card" type="Feather" size={20} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <Input
+                    placeholder="Account number"
+                    value={formData.bankAccount}
+                    onChangeText={(value) => updateField('bankAccount', value)}
+                    error={errors.bankAccount}
+                    keyboardType="numeric"
+                    style={styles.inputField}
+                  />
+                </View>
+                
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Icon name="user" type="Feather" size={20} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <Input
+                    placeholder="Account holder name"
+                    value={formData.bankHolder}
+                    onChangeText={(value) => updateField('bankHolder', value)}
+                    error={errors.bankHolder}
+                    style={styles.inputField}
+                  />
+                </View>
               </View>
             </View>
+            
+            {/* Specimen Cheque Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Icon name="image" type="Feather" size={20} color={Colors.primary} />
+                <Text style={styles.sectionTitle}>Specimen Cheque</Text>
+              </View>
+              <Button
+                title={chequeImage ? 'Change cheque photo' : 'Select photo of specimen cheque'}
+                onPress={selectChequeImage}
+                variant="secondary"
+                style={{ marginBottom: 12 }}
+              />
+              {chequeImage ? (
+                <Image source={{ uri: chequeImage }} style={styles.chequePreview} />
+              ) : null}
+            </View>
+
             
             {/* Security Notice */}
             <View style={styles.securityCard}>
@@ -288,7 +392,7 @@ const TransporterBankingScreen: React.FC<TransporterBankingScreenProps> = ({ nav
             title="Review and confirm"
             onPress={handleNext}
             variant="primary"
-            disabled={!isValid}
+            disabled={!isFormComplete}
             style={styles.nextButton}
             icon={<Icon name="check" type="Feather" size={20} color={Colors.white} />}
           />
@@ -366,35 +470,73 @@ const styles = StyleSheet.create({
   sectionContent: {
     gap: 16,
   },
-  toggleContainer: {
-    gap: 12,
+  inputField: {
+    marginBottom: 0,
   },
-  toggleOption: {
+  dropdownInput: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: Colors.white,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.borderLight,
   },
-  toggleContent: {
-    flex: 1,
-    marginRight: 16,
+  errorText: {
+    color: Colors.error,
+    fontSize: 12,
+    marginTop: 4,
   },
-  toggleLabel: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    width: '90%',
+    padding: 20,
+    alignItems: 'stretch',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.textPrimary,
+  },
+  searchInput: {
+    width: '100%',
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    paddingHorizontal: 16,
+    marginBottom: 16,
     fontSize: 16,
     color: Colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 4,
   },
-  toggleDescription: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 20,
+  bankItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
   },
-  inputField: {
-    marginBottom: 0,
+  bankItemText: {
+    fontSize: 16,
+    color: Colors.textPrimary,
+    flex: 1,
   },
   securityCard: {
     backgroundColor: Colors.success + '10',
@@ -461,6 +603,13 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     width: '100%',
+  },
+  chequePreview: {
+    width: '100%',
+    height: 120,
+    borderRadius: 10,
+    marginTop: 8,
+    resizeMode: 'contain',
   },
 });
 

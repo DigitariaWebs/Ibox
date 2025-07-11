@@ -44,7 +44,11 @@ const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ navigation }) =
             text: 'Get Started',
             onPress: () => {
               resetSignUpData();
-              navigation.navigate('HomeScreen');
+              // Navigate to appropriate home screen based on account type
+              const homeScreen = signUpData.accountType === 'transporter' 
+                ? 'TransporterHomeScreen' 
+                : 'HomeScreen';
+              navigation.navigate(homeScreen);
             }
           }
         ]

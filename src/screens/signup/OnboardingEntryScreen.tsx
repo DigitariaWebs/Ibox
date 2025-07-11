@@ -104,7 +104,7 @@ const OnboardingEntryScreen: React.FC<OnboardingEntryScreenProps> = ({ navigatio
           <View style={styles.featuresContainer}>
             <View style={styles.featureRow}>
               <FeatureCard 
-                icon="shield-check" 
+                icon="shield" 
                 title="Secure"
                 description="End-to-end encryption"
               />

@@ -19,6 +19,7 @@ import LoadingScreen from './src/LoadingScreen';
 import OnboardingScreen from './src/OnboardingScreen';
 import LoginScreen from './src/LoginScreen';
 import HomeScreen from './src/HomeScreen';
+import TransporterHomeScreen from './src/screens/TransporterHomeScreen';
 import SettingsScreen from './src/SettingsScreen';
 import { SignUpProvider } from './src/contexts/SignUpContext';
 import OnboardingEntryScreen from './src/screens/signup/OnboardingEntryScreen';
@@ -133,6 +134,7 @@ const RootNavigator = () => {
         <Stack.Screen name="TransporterBankingScreen" component={TransporterBankingScreen} />
         <Stack.Screen name="ConfirmationScreen" component={ConfirmationScreen} />
         <Stack.Screen name="HomeScreen" component={HomeScreen} />
+        <Stack.Screen name="TransporterHomeScreen" component={TransporterHomeScreen} />
         <Stack.Screen 
           name="Settings" 
           component={SettingsScreen}

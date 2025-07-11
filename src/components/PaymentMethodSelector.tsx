@@ -136,7 +136,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         ) : (
           <View style={styles.digitalPaymentInfo}>
             <View style={styles.digitalPaymentHeader}>
-              <Icon name="shield-check" type="Feather" size={24} color={Colors.success} />
+              <Icon name="shield" type="Feather" size={24} color={Colors.success} />
               <Text style={styles.digitalPaymentTitle}>
                 {PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name} Selected
               </Text>

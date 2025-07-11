@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,6 +16,13 @@ import { Colors } from '../../config/colors';
 import { useSignUp } from '../../contexts/SignUpContext';
 import { transporterVehicleSchema } from '../../validation/signUpSchemas';
 import * as ImagePicker from 'expo-image-picker';
+import {
+  CameraView,
+  CameraType,
+  useCameraPermissions,
+  CameraCapturedPicture,
+} from 'expo-camera';
+import { Images } from '../../config/assets';
 
 interface TransporterVehicleScreenProps {
   navigation: any;
@@ -26,6 +33,7 @@ interface FormData {
   plate: string;
   payloadKg: string;
   vehiclePhotos: string[];
+  licenseImage: string;
 }
 
 const VEHICLE_TYPES = [
@@ -43,15 +51,82 @@ const TransporterVehicleScreen: React.FC<TransporterVehicleScreenProps> = ({ nav
     vehicleType: signUpData.vehicleType || '',
     plate: signUpData.plate || '',
     payloadKg: signUpData.payloadKg?.toString() || '',
-    vehiclePhotos: signUpData.vehiclePhotos || [],
+    vehiclePhotos: [],
+    licenseImage: signUpData.licenseImages?.[0] || '',
   });
   
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isValid, setIsValid] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [currentPhotoStep, setCurrentPhotoStep] = useState(0);
+  const [capturedPhotos, setCapturedPhotos] = useState<{ [key: string]: string }>({});
+  const [licenseImage, setLicenseImage] = useState('');
+  const cameraRef = useRef<CameraView>(null);
 
+  const PHOTO_STEPS = [
+    { id: 'front', title: 'Front View', illustration: Images.front_car, instruction: 'Take a photo of the front of your vehicle' },
+    { id: 'back', title: 'Back View', illustration: Images.back_car, instruction: 'Take a photo of the back of your vehicle' },
+    { id: 'side', title: 'Side View', illustration: Images.side_car, instruction: 'Take a photo of the side of your vehicle' },
+    { id: 'plate', title: 'License Plate', illustration: Images.plate, instruction: 'Take a clear photo of your license plate' },
+    { id: 'license', title: "Driver's License", illustration: Images.license, instruction: 'Take a photo of your driver\'s license' },
+  ];
+
+  const [permission, requestPermission] = useCameraPermissions();
+
+  // Update formData with captured photos
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      vehiclePhotos: Object.values(capturedPhotos),
+      licenseImage: licenseImage,
+    }));
+  }, [capturedPhotos, licenseImage]);
+
+  // Validate each time form data changes
   useEffect(() => {
     validateForm();
   }, [formData]);
+
+  const startGuidedCapture = async () => {
+    if (permission == null) return;
+    if (!permission.granted) {
+      const { granted } = await requestPermission();
+      if (!granted) {
+        Alert.alert('No access to camera');
+        return;
+      }
+    }
+    setIsCameraOpen(true);
+    setCurrentPhotoStep(0);
+  };
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      const photo: CameraCapturedPicture = await cameraRef.current.takePictureAsync({});
+      if (currentPhotoStep < PHOTO_STEPS.length - 1) {
+        setCapturedPhotos(prev => ({ ...prev, [PHOTO_STEPS[currentPhotoStep].id]: photo.uri }));
+      } else {
+        setLicenseImage(photo.uri);
+      }
+      if (currentPhotoStep < PHOTO_STEPS.length - 1) {
+        setCurrentPhotoStep(prev => prev + 1);
+      } else {
+        setIsCameraOpen(false);
+      }
+    }
+  };
+
+  const retakePicture = () => {
+    if (currentPhotoStep < PHOTO_STEPS.length - 1) {
+      setCapturedPhotos(prev => {
+        const newPhotos = { ...prev };
+        delete newPhotos[PHOTO_STEPS[currentPhotoStep].id];
+        return newPhotos;
+      });
+    } else {
+      setLicenseImage('');
+    }
+  };
 
   const validateForm = async () => {
     try {
@@ -77,50 +152,27 @@ const TransporterVehicleScreen: React.FC<TransporterVehicleScreenProps> = ({ nav
   };
 
   const handleNext = () => {
-    if (isValid) {
-      updateSignUpData({
-        vehicleType: formData.vehicleType,
-        plate: formData.plate,
-        payloadKg: parseFloat(formData.payloadKg),
-        vehiclePhotos: formData.vehiclePhotos,
-      });
-      setCurrentStep(6);
-      navigation.navigate('TransporterComplianceScreen');
+    console.log('formData:', formData);
+    console.log('isValid:', isValid);
+    if (!isValid) {
+      Alert.alert('Incomplete', 'Please complete the required fields.');
+      return;
     }
+
+    // proceed regardless of photo count
+    updateSignUpData({
+      vehicleType: formData.vehicleType,
+      plate: formData.plate,
+      payloadKg: parseFloat(formData.payloadKg),
+      vehiclePhotos: Object.values(capturedPhotos),
+      licenseImages: licenseImage ? [licenseImage] : [],
+    });
+    setCurrentStep(6);
+    navigation.navigate('TransporterComplianceScreen');
   };
 
   const handleBack = () => {
     navigation.goBack();
-  };
-
-  const pickImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Camera roll permission is required to add photos.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const newPhotos = [...formData.vehiclePhotos, result.assets[0].uri];
-        updateField('vehiclePhotos', newPhotos);
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
-    }
-  };
-
-  const removePhoto = (index: number) => {
-    const newPhotos = formData.vehiclePhotos.filter((_, i) => i !== index);
-    updateField('vehiclePhotos', newPhotos);
   };
 
   const getVehicleTypeInfo = (typeId: string) => {
@@ -216,65 +268,58 @@ const TransporterVehicleScreen: React.FC<TransporterVehicleScreenProps> = ({ nav
               </View>
               
               <View style={styles.sectionContent}>
-                <Input
-                  placeholder="License plate number"
-                  value={formData.plate}
-                  onChangeText={(value) => updateField('plate', value.toUpperCase())}
-                  error={errors.plate}
-                  leftIcon={<Icon name="hash" type="Feather" size={20} color={Colors.textSecondary} />}
-                  style={styles.inputField}
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Icon name="hash" type="Feather" size={20} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <Input
+                    placeholder="License plate number"
+                    value={formData.plate}
+                    onChangeText={(value) => updateField('plate', value.toUpperCase())}
+                    error={errors.plate}
+                    style={[styles.inputField, { flex: 1 }]}
+                  />
+                </View>
                 
-                <Input
-                  placeholder="Payload capacity (kg)"
-                  value={formData.payloadKg}
-                  onChangeText={(value) => updateField('payloadKg', value)}
-                  keyboardType="numeric"
-                  error={errors.payloadKg}
-                  leftIcon={<Icon name="package" type="Feather" size={20} color={Colors.textSecondary} />}
-                  style={styles.inputField}
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Icon name="package" type="Feather" size={20} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <Input
+                    placeholder="Payload capacity (kg)"
+                    value={formData.payloadKg}
+                    onChangeText={(value) => updateField('payloadKg', value)}
+                    keyboardType="numeric"
+                    error={errors.payloadKg}
+                    style={[styles.inputField, { flex: 1 }]}
+                  />
+                </View>
               </View>
             </View>
             
-            {/* Photos Section */}
+            {/* Guided Photos Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Icon name="camera" type="Feather" size={20} color={Colors.primary} />
-                <Text style={styles.sectionTitle}>Vehicle Photos</Text>
+                <Text style={styles.sectionTitle}>Vehicle & License Photos</Text>
                 <View style={styles.recommendedBadge}>
-                  <Text style={styles.recommendedText}>Recommended</Text>
+                  <Text style={styles.recommendedText}>Required</Text>
                 </View>
               </View>
               
               <View style={styles.sectionContent}>
-                <View style={styles.photosContainer}>
-                  {formData.vehiclePhotos.map((photo, index) => (
-                    <View key={index} style={styles.photoItem}>
-                      <Image source={{ uri: photo }} style={styles.photoImage} />
-                      <TouchableOpacity 
-                        style={styles.removePhotoButton}
-                        onPress={() => removePhoto(index)}
-                      >
-                        <Icon name="x" type="Feather" size={16} color={Colors.white} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                  
-                  {formData.vehiclePhotos.length < 3 && (
-                    <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
-                      <Icon name="plus" type="Feather" size={24} color={Colors.primary} />
-                      <Text style={styles.addPhotoText}>Add Photo</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                
-                <View style={styles.photoHint}>
-                  <Icon name="lightbulb" type="Feather" size={16} color={Colors.warning} />
-                  <Text style={styles.hintText}>
-                    Photos of your vehicle help build trust with customers. Include exterior and cargo area views.
-                  </Text>
-                </View>
+                <Button
+                  title="Start Guided Photo Capture"
+                  onPress={startGuidedCapture}
+                  variant="secondary"
+                />
+                {/* Display captured photos horizontally */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginTop:12}}>
+                  <View style={{flexDirection:'row', gap:12}}>
+                    {Object.entries(capturedPhotos).map(([, uri]) => (
+                      <Image key={uri} source={{ uri }} style={styles.photoImage} />
+                    ))}
+                    {licenseImage && (
+                      <Image source={{ uri: licenseImage }} style={styles.photoImage} />
+                    )}
+                  </View>
+                </ScrollView>
               </View>
             </View>
             
@@ -315,12 +360,45 @@ const TransporterVehicleScreen: React.FC<TransporterVehicleScreenProps> = ({ nav
             title="Continue to compliance"
             onPress={handleNext}
             variant="primary"
-            disabled={!isValid}
             style={styles.nextButton}
             icon={<Icon name="arrow-right" type="Feather" size={20} color={Colors.white} />}
           />
         </View>
       </KeyboardAvoidingView>
+
+      {isCameraOpen && (
+        <View style={styles.cameraContainer}>
+          <CameraView
+            ref={cameraRef as unknown as React.RefObject<CameraView>}
+            style={styles.camera}
+            facing="back"
+          >
+            {/* Close / Back Button */}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setIsCameraOpen(false)}
+            >
+              <Icon name="x" type="Feather" size={28} color={Colors.white} />
+            </TouchableOpacity>
+
+            {/* Illustration & Instruction */}
+            <View style={styles.cameraInstructionWrapper}>
+              <Image
+                source={PHOTO_STEPS[currentPhotoStep].illustration}
+                style={styles.illustration}
+              />
+              <Text style={styles.instructionText}>
+                {PHOTO_STEPS[currentPhotoStep].instruction}
+              </Text>
+            </View>
+
+            {/* Capture Button */}
+            <View style={styles.captureWrapper}>
+              <TouchableOpacity style={styles.captureButton} onPress={takePicture} />
+            </View>
+          </CameraView>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -566,6 +644,58 @@ const styles = StyleSheet.create({
   nextButton: {
     width: '100%',
   },
+  cameraContainer: { flex: 1, position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: '#000' },
+  camera: { flex: 1 },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 22,
+  },
+  cameraInstructionWrapper: {
+    position: 'absolute',
+    top: 120,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  instructionText: {
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  captureWrapper: {
+    position: 'absolute',
+    bottom: 60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  captureButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.white,
+    borderWidth: 4,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  cameraOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  illustration: {
+    width: '60%',
+    aspectRatio: 1,
+    opacity: 0.5,
+    resizeMode: 'contain',
+  },
+  instruction: { color: 'white', fontSize: 18, margin: 20 },
 });
 
 export default TransporterVehicleScreen;

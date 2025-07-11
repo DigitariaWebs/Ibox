@@ -14,6 +14,12 @@ export type IconKey = keyof typeof Icons;
 export const Images = {
   // Add domain-specific images here, e.g.:
   // hero: require("../../assets/images/hero.png"),
+  front_car: require("../../assets/images/front_car.png"),
+  back_car: require("../../assets/images/back_car.png"),
+  side_car: require("../../assets/images/side_car.png"),
+  plate: require("../../assets/images/plate.png"),
+  license: require("../../assets/images/license.png"),
+  cheque: require("../../assets/images/cheque.png"),
 } as const;
 
 export const PaymentLogos = {

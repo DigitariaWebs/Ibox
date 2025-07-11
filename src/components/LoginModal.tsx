@@ -106,15 +106,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
     }
   };
 
-  const handleSocialLogin = async (provider: 'facebook' | 'google' | 'apple') => {
+  const handleSocialLogin = async (provider: 'facebook' | 'google' | 'apple', accountType?: 'transporter' | 'customer') => {
     setIsLoading(true);
-    console.log('Login with:', provider);
+    console.log('Login with:', provider, 'as:', accountType);
     
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     setIsLoading(false);
-    handleSuccessfulLogin();
+    handleSuccessfulLogin(accountType);
   };
 
   const handleEmailFocus = () => {
@@ -133,13 +133,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
     });
   };
 
-  const handleSuccessfulLogin = () => {
+  const handleSuccessfulLogin = (accountType?: 'transporter' | 'customer') => {
     // Close the modal first
     onClose();
-    // Navigate to HomeScreen after a short delay to allow modal to close
+    // Navigate to appropriate screen based on account type
     setTimeout(() => {
       if (navigation) {
-        navigation.navigate('HomeScreen');
+        if (accountType === 'transporter') {
+          navigation.navigate('TransporterHomeScreen');
+        } else {
+          navigation.navigate('HomeScreen');
+        }
       }
     }, 300);
   };
@@ -328,7 +332,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
               <View style={styles.socialContainer}>
                 <TouchableOpacity
                   style={[styles.modernSocialButton, styles.facebookButton]}
-                  onPress={() => handleSocialLogin('facebook')}
+                  onPress={() => handleSocialLogin('facebook', 'transporter')}
                   activeOpacity={0.8}
                   disabled={isLoading}
                 >
