@@ -3,7 +3,7 @@ import { View, StyleSheet, Dimensions, Platform } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Marker, Region, Polyline } from 'react-native-maps';
 import { Colors } from '../config/colors';
 import * as Location from 'expo-location';
-import { GOOGLE_MAPS_API_KEY } from '@env';
+import ShippingModal from './ShippingModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,6 +30,9 @@ const HomeMap: React.FC<HomeMapProps> = ({ style, onRegionChange }) => {
   const [isMapReady, setIsMapReady] = useState(false);
   const [destination, setDestination] = useState<RouteCoordinates | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<RouteCoordinates[]>([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [destinationAddress, setDestinationAddress] = useState('');
+  const [distance, setDistance] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -73,10 +76,55 @@ const HomeMap: React.FC<HomeMapProps> = ({ style, onRegionChange }) => {
     };
   }, [isMapReady]);
 
+  const getAddressFromCoordinates = async (coords: RouteCoordinates) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.latitude},${coords.longitude}&key=AIzaSyBRwiNsI16XFfA71eFLM4YaIDax8qQIrI4`
+      );
+      const json = await response.json();
+      if (json.results && json.results.length > 0) {
+        return json.results[0].formatted_address;
+      }
+      return 'Adresse inconnue';
+    } catch (error) {
+      console.error('Error fetching address:', error);
+      return 'Adresse inconnue';
+    }
+  };
+
+  const calculateDistance = (route: RouteCoordinates[]) => {
+    let dist = 0;
+    for (let i = 0; i < route.length - 1; i++) {
+      dist += getDistanceFromLatLonInKm(
+        route[i].latitude,
+        route[i].longitude,
+        route[i + 1].latitude,
+        route[i + 1].longitude
+      );
+    }
+    return Math.round(dist * 10) / 10; // Round to 1 decimal place
+  };
+
+  const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const deg2rad = (deg: number) => {
+    return deg * (Math.PI / 180);
+  };
+
   const getRouteDirections = async (startLoc: RouteCoordinates, destinationLoc: RouteCoordinates) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${startLoc.latitude},${startLoc.longitude}&destination=${destinationLoc.latitude},${destinationLoc.longitude}&key=${GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/directions/json?origin=${startLoc.latitude},${startLoc.longitude}&destination=${destinationLoc.latitude},${destinationLoc.longitude}&key=AIzaSyBRwiNsI16XFfA71eFLM4YaIDax8qQIrI4`
       );
       const json = await response.json();
       
@@ -84,6 +132,17 @@ const HomeMap: React.FC<HomeMapProps> = ({ style, onRegionChange }) => {
         const points = json.routes[0].overview_polyline.points;
         const decodedPoints = decodePolyline(points);
         setRouteCoordinates(decodedPoints);
+
+        // Calculate distance
+        const distanceInKm = calculateDistance(decodedPoints);
+        setDistance(`${distanceInKm} km`);
+
+        // Get destination address
+        const address = await getAddressFromCoordinates(destinationLoc);
+        setDestinationAddress(address);
+
+        // Show modal
+        setIsModalVisible(true);
 
         // Fit map to show entire route
         if (mapRef.current) {
@@ -203,6 +262,14 @@ const HomeMap: React.FC<HomeMapProps> = ({ style, onRegionChange }) => {
           />
         )}
       </MapView>
+
+      <ShippingModal
+        visible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        destinationAddress={destinationAddress}
+        distance={distance}
+        coordinates={destination || { latitude: 0, longitude: 0 }}
+      />
     </View>
   );
 };

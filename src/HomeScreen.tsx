@@ -69,7 +69,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     if (userData.firstName) {
       return userData.firstName;
     }
-    return accountType === 'business' ? 'Entreprise' : 'Utilisateur';
+    return accountType === 'business' ? 'Entreprise' : 'Alexandre Dubois';
   };
 
   const getAccountTypeLabel = () => {
