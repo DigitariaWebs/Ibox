@@ -20,6 +20,7 @@ import OnboardingScreen from './src/OnboardingScreen';
 import LoginScreen from './src/LoginScreen';
 import HomeScreen from './src/HomeScreen';
 import SettingsScreen from './src/SettingsScreen';
+import ProfileScreen from './src/ProfileScreen';
 import { SignUpProvider } from './src/contexts/SignUpContext';
 import OnboardingEntryScreen from './src/screens/signup/OnboardingEntryScreen';
 import AccountTypeScreen from './src/screens/signup/AccountTypeScreen';
@@ -133,6 +134,15 @@ const RootNavigator = () => {
         <Stack.Screen name="TransporterBankingScreen" component={TransporterBankingScreen} />
         <Stack.Screen name="ConfirmationScreen" component={ConfirmationScreen} />
         <Stack.Screen name="HomeScreen" component={HomeScreen} />
+        <Stack.Screen 
+          name="Profile" 
+          component={ProfileScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
         <Stack.Screen 
           name="Settings" 
           component={SettingsScreen}

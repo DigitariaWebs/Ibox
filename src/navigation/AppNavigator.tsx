@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../HomeScreen';
 import MapScreen from '../screens/MapScreen';
 import SettingsScreen from '../SettingsScreen';
+import ProfileScreen from '../ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +28,14 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen 
           name="Settings" 
           component={SettingsScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen 
+          name="Profile" 
+          component={ProfileScreen}
           options={{
             presentation: 'card',
             animation: 'slide_from_right',
