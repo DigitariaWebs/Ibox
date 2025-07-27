@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Alert, Platform } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, useRoute } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from './config/colors';
 import AnimatedSearchModal from './components/AnimatedSearchModal';
@@ -48,6 +48,7 @@ type RootStackParamList = {
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute();
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Place[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -67,12 +68,37 @@ const HomeScreen: React.FC = () => {
   const [startLocation, setStartLocation] = useState<string>('');
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [showBackButton, setShowBackButton] = useState(false);
+  
+  // Driver tracking states
+  const [trackingDriver, setTrackingDriver] = useState<any>(null);
+  const [driverLocation, setDriverLocation] = useState<{latitude: number; longitude: number} | null>(null);
+  const [trackingActive, setTrackingActive] = useState(false);
+  const [estimatedArrival, setEstimatedArrival] = useState<number>(0); // in minutes
+  const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null);
 
   const GOOGLE_API_KEY = 'AIzaSyAzPxqQ9QhUq_cmXkkcE-6DcgJn-EDngzI';
 
   useEffect(() => {
     getCurrentLocation();
   }, []);
+
+  // Handle tracking driver parameter from navigation
+  useEffect(() => {
+    const params = route.params as any;
+    if (params?.trackingDriver && !trackingActive) {
+      console.log('🚗 Starting driver tracking:', params.trackingDriver);
+      initializeDriverTracking(params.trackingDriver);
+    }
+  }, [route.params]);
+
+  // Cleanup tracking interval on unmount
+  useEffect(() => {
+    return () => {
+      if (trackingInterval) {
+        clearInterval(trackingInterval);
+      }
+    };
+  }, [trackingInterval]);
 
   const getCurrentLocation = async () => {
     try {
@@ -395,6 +421,33 @@ const HomeScreen: React.FC = () => {
               strokePattern={[1]}
             />
           )}
+
+          {/* Driver marker for tracking */}
+          {trackingActive && driverLocation && (
+            <Marker
+              coordinate={driverLocation}
+              title={trackingDriver?.name || 'Driver'}
+              description={`ETA: ${estimatedArrival} minutes`}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              <View style={styles.driverMarker}>
+                <Ionicons name="car" size={20} color="white" />
+              </View>
+            </Marker>
+          )}
+
+          {/* Route line from driver to user when tracking */}
+          {trackingActive && driverLocation && (
+            <Polyline
+              coordinates={[
+                driverLocation,
+                { latitude: currentLocation.latitude, longitude: currentLocation.longitude }
+              ]}
+              strokeColor={Colors.success}
+              strokeWidth={3}
+              strokePattern={[10, 5]}
+            />
+          )}
         </MapView>
       );
     } catch (error) {
@@ -455,6 +508,91 @@ const HomeScreen: React.FC = () => {
       setMarkers([]);
       setRouteCoordinates([]);
     }
+  };
+
+  // Driver tracking functions
+  const initializeDriverTracking = (driver: any) => {
+    setTrackingDriver(driver);
+    setTrackingActive(true);
+    
+    // Set initial driver location (randomly positioned 2-5km away)
+    const distance = 0.02 + Math.random() * 0.03; // 2-5km in degrees
+    const angle = Math.random() * 2 * Math.PI;
+    const initialDriverLocation = {
+      latitude: currentLocation.latitude + Math.cos(angle) * distance,
+      longitude: currentLocation.longitude + Math.sin(angle) * distance,
+    };
+    setDriverLocation(initialDriverLocation);
+    
+    // Set initial ETA (8-15 minutes)
+    const initialETA = 8 + Math.random() * 7;
+    setEstimatedArrival(Math.round(initialETA));
+    
+    // Start simulation
+    startDriverMovementSimulation(initialDriverLocation, initialETA);
+  };
+
+  const startDriverMovementSimulation = (initialLocation: {latitude: number; longitude: number}, initialETA: number) => {
+    let currentDriverPos = { ...initialLocation };
+    let currentETA = initialETA;
+    
+    const interval = setInterval(() => {
+      // Calculate movement towards user location
+      const userLat = currentLocation.latitude;
+      const userLng = currentLocation.longitude;
+      
+      // Move driver closer to user (simulate 30-50 km/h speed)
+      const stepSize = 0.0008 + Math.random() * 0.0004; // Varies speed slightly
+      const deltaLat = userLat - currentDriverPos.latitude;
+      const deltaLng = userLng - currentDriverPos.longitude;
+      const distance = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
+      
+      if (distance > 0.001) { // Still moving towards destination
+        // Move towards user with some randomness for realistic movement
+        const progress = stepSize / distance;
+        currentDriverPos = {
+          latitude: currentDriverPos.latitude + deltaLat * progress + (Math.random() - 0.5) * 0.0001,
+          longitude: currentDriverPos.longitude + deltaLng * progress + (Math.random() - 0.5) * 0.0001,
+        };
+        
+        // Update ETA (decrease by 0.5-1.5 minutes every update)
+        currentETA = Math.max(0, currentETA - (0.5 + Math.random()));
+        
+        setDriverLocation(currentDriverPos);
+        setEstimatedArrival(Math.round(currentETA));
+        
+        console.log(`🚗 Driver moving: ETA ${Math.round(currentETA)}min, Distance: ${distance.toFixed(4)}`);
+      } else {
+        // Driver arrived
+        console.log('🎉 Driver arrived!');
+        setEstimatedArrival(0);
+        clearInterval(interval);
+        setTrackingInterval(null);
+        
+        // Show arrival notification
+        Alert.alert(
+          '🎉 Driver Arrived!',
+          `${trackingDriver?.name} has reached your location.`,
+          [
+            { text: 'OK', onPress: () => stopDriverTracking() }
+          ]
+        );
+      }
+    }, 3000); // Update every 3 seconds
+    
+    setTrackingInterval(interval);
+  };
+
+  const stopDriverTracking = () => {
+    if (trackingInterval) {
+      clearInterval(trackingInterval);
+      setTrackingInterval(null);
+    }
+    setTrackingActive(false);
+    setTrackingDriver(null);
+    setDriverLocation(null);
+    setEstimatedArrival(0);
+    console.log('🛑 Driver tracking stopped');
   };
 
   const handleChangeStartLocation = () => {
@@ -628,6 +766,64 @@ const HomeScreen: React.FC = () => {
         onSelectService={handleServiceSelect}
         destination={selectedDestination?.title}
       />
+
+      {/* Driver Tracking Panel */}
+      {trackingActive && trackingDriver && (
+        <View style={styles.driverTrackingPanel}>
+          <View style={styles.driverInfo}>
+            <View style={styles.driverPhotoContainer}>
+              <Text style={styles.driverInitials}>
+                {trackingDriver.name?.charAt(0) || 'D'}
+              </Text>
+              <View style={styles.onlineIndicator} />
+            </View>
+            
+            <View style={styles.driverDetails}>
+              <Text style={styles.driverName}>{trackingDriver.name}</Text>
+              <Text style={styles.vehicleInfo}>
+                {trackingDriver.vehicleType} • {trackingDriver.vehiclePlate}
+              </Text>
+              <View style={styles.etaContainer}>
+                <Ionicons name="time-outline" size={14} color={Colors.success} />
+                <Text style={styles.etaText}>
+                  {estimatedArrival > 0 ? `${estimatedArrival} min away` : 'Arrived!'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.driverActions}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => {}}>
+                <Ionicons name="call" size={18} color={Colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={() => {}}>
+                <Ionicons name="chatbubble" size={18} color={Colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.stopButton]} 
+                onPress={stopDriverTracking}
+              >
+                <Ionicons name="close" size={18} color="#FF6B6B" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          {estimatedArrival > 0 && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: `${Math.max(10, 100 - (estimatedArrival / 15) * 100)}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.progressText}>
+                Driver is on the way to your location
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 };
@@ -765,6 +961,129 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 13,
     fontWeight: '600',
+  },
+  // Driver tracking styles
+  driverMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.success,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  driverTrackingPanel: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  driverInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  driverPhotoContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  driverInitials: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 48,
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.success,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  driverDetails: {
+    flex: 1,
+  },
+  driverName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  vehicleInfo: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
+  etaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  etaText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.success,
+  },
+  driverActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  stopButton: {
+    backgroundColor: '#FFE5E5',
+    borderColor: '#FFB3B3',
+  },
+  progressContainer: {
+    marginTop: 8,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: Colors.surface,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.success,
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 });
 

@@ -109,7 +109,7 @@ const DriverFoundScreen: React.FC<DriverFoundScreenProps> = ({
     // Navigate back to map with tracking enabled
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Home', params: { trackingDriver: selectedDriver } }],
+      routes: [{ name: 'HomeScreen', params: { trackingDriver: selectedDriver } }],
     });
   };
 
