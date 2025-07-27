@@ -46,6 +46,11 @@ import ColisScreen from './src/screens/services/ColisScreen';
 import DemenagementScreen from './src/screens/services/DemenagementScreen';
 import StockageScreen from './src/screens/services/StockageScreen';
 import ExpressScreen from './src/screens/services/ExpressScreen';
+import PackagePhotoScreen from './src/screens/PackagePhotoScreen';
+import MeasuringScreen from './src/screens/MeasuringScreen';
+import OrderSummaryScreen from './src/screens/OrderSummaryScreen';
+import DriverSearchScreen from './src/screens/DriverSearchScreen';
+import DriverFoundScreen from './src/screens/DriverFoundScreen';
 
 // Import store and actions
 import { increment, decrement, incrementByAmount } from './src/store/store';
@@ -229,6 +234,51 @@ const RootNavigator = () => {
           name="ExpressScreen"
           component={ExpressScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="PackagePhoto" 
+          component={PackagePhotoScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="Measuring" 
+          component={MeasuringScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="OrderSummary" 
+          component={OrderSummaryScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="DriverSearch" 
+          component={DriverSearchScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="DriverFound" 
+          component={DriverFoundScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>

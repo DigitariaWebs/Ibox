@@ -26,7 +26,7 @@
       "edgeToEdgeEnabled": true,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyA_jfjSKfrdU9J7w0AezzFhsNvZUc4Uvj8"
+          "apiKey": "AIzaSyAzPxqQ9QhUq_cmXkkcE-6DcgJn-EDngzI"
         }
       }
     },
@@ -35,14 +35,7 @@
     },
     "plugins": [
       "expo-router",
-      "expo-video",
-      [
-        "expo-maps",
-        {
-          "requestLocationPermission": true,
-          "locationPermission": "Allow $(PRODUCT_NAME) to use your location for better service delivery"
-        }
-      ]
+      "expo-video"
     ],
     "platforms": [
       "ios",
