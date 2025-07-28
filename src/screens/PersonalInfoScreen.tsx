@@ -217,7 +217,7 @@ const PersonalInfoScreen: React.FC<PersonalInfoScreenProps> = ({ navigation }) =
           ]}
         >
           <TouchableOpacity style={styles.backButton} onPress={handleCancel}>
-            <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+            <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Informations personnelles</Text>
           <TouchableOpacity 

@@ -100,7 +100,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
               onPress={handleBackPress}
               activeOpacity={0.7}
             >
-              <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+              <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
             </TouchableOpacity>
           </View>
 

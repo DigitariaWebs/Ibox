@@ -355,7 +355,7 @@ const AddressesScreen: React.FC<AddressesScreenProps> = ({ navigation }) => {
         ]}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+                      <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mes adresses</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleAddAddress}>

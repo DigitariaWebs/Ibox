@@ -389,7 +389,7 @@ const DemenagementScreen: React.FC<DemenagementScreenProps> = ({ navigation }) =
           ]}
         >
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Icon name="arrow-left" type="Feather" size={24} color={Colors.white} />
+            <Icon name="chevron-left" type="Feather" size={24} color={Colors.white} />
           </TouchableOpacity>
           
           <View style={styles.headerInfo}>

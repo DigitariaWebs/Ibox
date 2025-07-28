@@ -152,7 +152,7 @@ const BusinessDetailsScreen: React.FC<BusinessDetailsScreenProps> = ({ navigatio
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+                      <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.stepIndicator}>Step 6 of 8</Text>
       </View>

@@ -452,7 +452,7 @@ const PaymentMethodsScreen: React.FC<PaymentMethodsScreenProps> = ({ navigation 
         ]}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+                      <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Moyens de paiement</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleAddCard}>

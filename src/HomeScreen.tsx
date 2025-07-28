@@ -518,7 +518,34 @@ const HomeScreen: React.FC = () => {
 
   const handleSidebarNavigate = (screen: string) => {
     console.log('🚀 Navigate to:', screen);
-    // TODO: Implement navigation to different screens
+    
+    // Navigate to the selected screen
+    switch(screen) {
+      case 'HomeScreen':
+        // Already on home screen, do nothing
+        break;
+      case 'OrderHistory':
+        navigation.navigate('OrderHistory');
+        break;
+      case 'Services':
+        navigation.navigate('Services');
+        break;
+      case 'PaymentMethods':
+        navigation.navigate('PaymentMethods');
+        break;
+      case 'Addresses':
+        navigation.navigate('Addresses');
+        break;
+      case 'HelpSupport':
+        navigation.navigate('HelpSupport');
+        break;
+      case 'Settings':
+        navigation.navigate('Settings');
+        break;
+      default:
+        console.log('🚀 Unknown screen:', screen);
+        break;
+    }
   };
 
   const handleServiceSelect = (serviceId: string) => {
@@ -939,6 +966,7 @@ const HomeScreen: React.FC = () => {
         visible={sidebarVisible}
         onClose={() => setSidebarVisible(false)}
         onNavigate={handleSidebarNavigate}
+        activeScreen="HomeScreen"
       />
 
       <ServiceSelectionModal

@@ -32,6 +32,7 @@ interface SidebarMenuProps {
   visible: boolean;
   onClose: () => void;
   onNavigate: (screen: string) => void;
+  activeScreen?: string;
 }
 
 interface MenuItem {
@@ -52,7 +53,7 @@ const menuItems: MenuItem[] = [
     subtitle: 'Dashboard',
     icon: 'home-outline',
     iconFamily: 'Ionicons',
-    screen: 'Home',
+    screen: 'HomeScreen',
     color: Colors.primary,
   },
   {
@@ -61,7 +62,7 @@ const menuItems: MenuItem[] = [
     subtitle: 'Order history',
     icon: 'receipt-outline',
     iconFamily: 'Ionicons',
-    screen: 'Orders',
+    screen: 'OrderHistory',
     color: Colors.primary,
     badge: '3',
   },
@@ -80,7 +81,7 @@ const menuItems: MenuItem[] = [
     subtitle: 'Wallet & cards',
     icon: 'card-outline',
     iconFamily: 'Ionicons',
-    screen: 'Payment',
+    screen: 'PaymentMethods',
     color: Colors.primary,
   },
   {
@@ -98,7 +99,7 @@ const menuItems: MenuItem[] = [
     subtitle: 'Help center',
     icon: 'help-circle-outline',
     iconFamily: 'Ionicons',
-    screen: 'Support',
+    screen: 'HelpSupport',
     color: Colors.primary,
   },
   {
@@ -116,6 +117,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
   visible,
   onClose,
   onNavigate,
+  activeScreen = 'HomeScreen',
 }) => {
   const translateX = useSharedValue(-SIDEBAR_WIDTH);
   const backdropOpacity = useSharedValue(0);
@@ -145,11 +147,12 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
     };
   });
 
-  const renderIcon = (item: MenuItem) => {
+  const renderIcon = (item: MenuItem, isActive: boolean) => {
+    const iconColor = isActive ? Colors.white : Colors.primary;
     const iconProps = {
       name: item.icon as any,
       size: 22,
-      color: Colors.primary,
+      color: iconColor,
     };
 
     switch (item.iconFamily) {
@@ -209,39 +212,54 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
 
         {/* Menu Items */}
         <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>
-          {menuItems.map((item, index) => (
-            <Animated.View
-              key={item.id}
-              entering={FadeIn.delay(index * 30 + 200)}
-            >
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleMenuItemPress(item.screen)}
-                activeOpacity={0.7}
-                underlayColor="#F1F5F9"
+          {menuItems.map((item, index) => {
+            const isActive = activeScreen === item.screen;
+            
+            return (
+              <Animated.View
+                key={item.id}
+                entering={FadeIn.delay(index * 30 + 200)}
               >
-                <View style={styles.iconWrapper}>
-                  {renderIcon(item)}
-                </View>
-                
-                <View style={styles.menuContent}>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                </View>
-                
-                {item.badge && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{item.badge}</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    isActive && styles.activeMenuItem
+                  ]}
+                  onPress={() => handleMenuItemPress(item.screen)}
+                  activeOpacity={0.7}
+                  underlayColor="#F1F5F9"
+                >
+                  <View style={[
+                    styles.iconWrapper,
+                    isActive && styles.activeIconWrapper
+                  ]}>
+                    {renderIcon(item, isActive)}
                   </View>
-                )}
-                
-                <Ionicons 
-                  name="chevron-forward" 
-                  size={18} 
-                  color={Colors.textTertiary} 
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
+                  
+                  <View style={styles.menuContent}>
+                    <Text style={[
+                      styles.menuTitle,
+                      isActive && styles.activeMenuTitle
+                    ]}>
+                      {item.title}
+                    </Text>
+                  </View>
+                  
+                  {item.badge && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{item.badge}</Text>
+                    </View>
+                  )}
+                  
+                  <Ionicons 
+                    name="chevron-forward" 
+                    size={18} 
+                    color={isActive ? Colors.white : Colors.textTertiary} 
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
           
           {/* Divider */}
           <View style={styles.divider} />
@@ -369,6 +387,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: 'transparent',
   },
+  activeMenuItem: {
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
   iconWrapper: {
     width: 40,
     height: 40,
@@ -378,6 +404,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
+  activeIconWrapper: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
   menuContent: {
     flex: 1,
   },
@@ -386,6 +415,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textPrimary,
     letterSpacing: -0.2,
+  },
+  activeMenuTitle: {
+    color: Colors.white,
   },
   badge: {
     backgroundColor: Colors.error,

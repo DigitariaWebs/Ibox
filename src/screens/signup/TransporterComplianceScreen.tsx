@@ -149,7 +149,7 @@ const TransporterComplianceScreen: React.FC<TransporterComplianceScreenProps> = 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+                      <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.stepIndicator}>Step 5 of 7</Text>
       </View>
@@ -268,7 +268,7 @@ const TransporterComplianceScreen: React.FC<TransporterComplianceScreenProps> = 
                 )}
                 
                 <View style={styles.insuranceHint}>
-                  <Icon name="lightbulb" type="Feather" size={16} color={Colors.warning} />
+                  <Icon name="info" type="Feather" size={16} color={Colors.warning} />
                   <Text style={styles.hintText}>
                     Your vehicle insurance must be valid and cover commercial transportation activities.
                   </Text>

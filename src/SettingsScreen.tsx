@@ -27,13 +27,23 @@ interface SettingsScreenProps {
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { logout, user } = useAuth();
   const dispatch = useDispatch();
-  const user2 = useSelector((state: RootState) => state.user);
+  const userData = useSelector((state: RootState) => state.user);
+  const accountType = useSelector((state: RootState) => state.user.accountType);
+  
   const [darkMode, setDarkMode] = useState(false);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [locationServices, setLocationServices] = useState(true);
   const [emailMarketing, setEmailMarketing] = useState(false);
+  
+  // Preference states
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [locationEnabled, setLocationEnabled] = useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(false);
 
   // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(1)).current;
 
@@ -287,7 +297,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           ]}
         >
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+            <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
           <View style={styles.headerRight} />

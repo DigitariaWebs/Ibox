@@ -43,6 +43,7 @@ import PaymentMethodsScreen from './src/screens/PaymentMethodsScreen';
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import HelpSupportScreen from './src/screens/HelpSupportScreen';
 import AboutScreen from './src/screens/AboutScreen';
+import ServicesScreen from './src/screens/ServicesScreen';
 import ColisScreen from './src/screens/services/ColisScreen';
 import DemenagementScreen from './src/screens/services/DemenagementScreen';
 import StockageScreen from './src/screens/services/StockageScreen';
@@ -235,6 +236,7 @@ const MainNavigator: React.FC = () => {
         <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
         <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
         <Stack.Screen name="About" component={AboutScreen} />
+        <Stack.Screen name="Services" component={ServicesScreen} />
         
         {/* Map Screen */}
         <Stack.Screen 

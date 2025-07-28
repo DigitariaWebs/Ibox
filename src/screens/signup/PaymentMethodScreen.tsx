@@ -64,7 +64,7 @@ const PaymentMethodScreen: React.FC<PaymentMethodScreenProps> = ({ navigation })
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+                      <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.stepIndicator}>Step 4 of 7</Text>
       </View>

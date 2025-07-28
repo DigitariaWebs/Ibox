@@ -67,7 +67,7 @@ const OnboardingEntryScreen: React.FC<OnboardingEntryScreenProps> = ({ navigatio
 
       {/* Back Button */}
       <TouchableOpacity onPress={handleBackToAuth} style={styles.backButton}>
-        <Icon name="arrow-left" type="Feather" size={24} color={Colors.white} />
+                    <Icon name="chevron-left" type="Feather" size={24} color={Colors.white} />
       </TouchableOpacity>
       
       <Animated.View 

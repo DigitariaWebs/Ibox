@@ -298,7 +298,7 @@ const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({ navigation }) => 
         ]}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" type="Feather" size={24} color={Colors.textPrimary} />
+                      <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Aide et support</Text>
         <TouchableOpacity style={styles.searchButton}>
@@ -343,11 +343,11 @@ const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({ navigation }) => 
               <Text style={styles.quickActionText}>Mes commandes</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.quickAction} onPress={handleReportBug}>
-              <Icon name="bug" type="Feather" size={20} color="#EF4444" />
+              <Icon name="alert-circle" type="Feather" size={20} color="#EF4444" />
               <Text style={styles.quickActionText}>Signaler un bug</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.quickAction} onPress={handleFeatureRequest}>
-              <Icon name="lightbulb" type="Feather" size={20} color="#F59E0B" />
+              <Icon name="help-circle" type="Feather" size={20} color="#F59E0B" />
               <Text style={styles.quickActionText}>Suggestion</Text>
             </TouchableOpacity>
           </View>
