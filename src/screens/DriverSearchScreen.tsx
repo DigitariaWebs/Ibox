@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import * as Location from 'expo-location';
 import {
   View,
   StyleSheet,
@@ -53,45 +54,59 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
     return serviceType || service || 'express';
   };
 
-  const getPickupLocation = () => {
-    console.log('🔍 DEBUG: DriverSearchScreen route.params:', route.params);
-    const { startLocationCoords, destination, service, serviceType } = route.params || {};
-    console.log('🔍 DEBUG: Extracted startLocationCoords:', startLocationCoords);
-    console.log('🔍 DEBUG: Extracted destination:', destination);
-    console.log('🔍 DEBUG: Service type:', serviceType || service);
-    
-    // If valid pickup coordinates are provided, use them.
-    if (
-      startLocationCoords &&
-      typeof startLocationCoords.latitude === 'number' &&
-      typeof startLocationCoords.longitude === 'number'
-    ) {
-      console.log('📍 Using pickup coordinates for driver search:', startLocationCoords);
-      return {
-        latitude: startLocationCoords.latitude,
-        longitude: startLocationCoords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
+  const [pickupLocation, setPickupLocation] = useState<{latitude:number; longitude:number; latitudeDelta:number; longitudeDelta:number} | null>(null);
+
+  // Determine pickup location on mount
+  useEffect(() => {
+    (async () => {
+      const params = route.params || {};
+      console.log('🔍 DriverSearch: All route params received:', JSON.stringify(params, null, 2));
+      console.log('🔍 DriverSearch: startLocationCoords specifically:', params.startLocationCoords);
+      
+      if (
+        params.startLocationCoords &&
+        typeof params.startLocationCoords.latitude === 'number' &&
+        typeof params.startLocationCoords.longitude === 'number'
+      ) {
+        // Use provided pickup coordinates
+        const { latitude, longitude } = params.startLocationCoords;
+        console.log('✅ DriverSearch: Using provided coordinates:', { latitude, longitude });
+        setPickupLocation({ latitude, longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 });
+        return;
+      }
+
+      console.log('⚠️ DriverSearch: No valid startLocationCoords, requesting device location');
+      
+      // Attempt device location as fallback
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          console.log('📍 DriverSearch: Location permission granted, getting current position');
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          console.log('✅ DriverSearch: Got device location:', { latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+          setPickupLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 });
+          return;
+        } else {
+          console.log('❌ DriverSearch: Location permission denied');
+        }
+      } catch (err) {
+        console.warn('❌ DriverSearch: Location fetch failed:', err);
+      }
+
+      // Final fallback to default QC
+      console.log('📍 DriverSearch: Using Quebec City fallback coordinates');
+      setPickupLocation({ latitude: 46.8139, longitude: -71.2082, latitudeDelta: 0.01, longitudeDelta: 0.01 });
+    })();
+  }, []);
+
+  // Start search once pickupLocation known
+  useEffect(() => {
+    if (pickupLocation) {
+      setSearchText(vehicleConfig.searchText);
+      startDriverSearch();
     }
+  }, [pickupLocation]);
 
-    // If pickup coordinates are missing, fall back to a safe default rather than
-    // the destination. Spawning drivers at the destination leads to unrealistic
-    // behaviour where drivers appear far from the pickup point.
-    console.log(
-      '📍 WARNING: startLocationCoords missing or invalid – falling back to default location (Quebec City).'
-    );
-    console.log('🔍 DEBUG: Full route.params structure:', JSON.stringify(route.params, null, 2));
-
-    return {
-      latitude: 46.8139, // Quebec City default
-      longitude: -71.2082,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    };
-  };
-
-  const pickupLocation = getPickupLocation();
   const currentServiceType = getServiceType();
 
   // Vehicle configurations by service type
@@ -146,6 +161,8 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
 
   const vehicleConfig = getVehiclesByService(currentServiceType);
 
+  // If pickupLocation not yet ready, show loading overlay later
+
   // Animation values
   const radarScale1 = useSharedValue(0);
   const radarScale2 = useSharedValue(0);
@@ -154,12 +171,6 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
   const radarOpacity2 = useSharedValue(1);
   const radarOpacity3 = useSharedValue(1);
   const progressValue = useSharedValue(0);
-
-  useEffect(() => {
-    // Set initial search text based on service type
-    setSearchText(vehicleConfig.searchText);
-    startDriverSearch();
-  }, []);
 
   const startDriverSearch = () => {
     // Start radar animations
@@ -237,7 +248,7 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
 
   const generateDriver = (id: number): Driver => {
     const angle = (Math.random() * 360) * (Math.PI / 180);
-    const distance = Math.random() * 0.008 + 0.002; // Random distance within ~1km
+    const distance = Math.random() * 0.02 + 0.005; // 0.5 – 2 km radius for realism
     
     // Select random vehicle from service-specific vehicles
     const randomVehicle = vehicleConfig.vehicles[Math.floor(Math.random() * vehicleConfig.vehicles.length)];
@@ -246,8 +257,8 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
     return {
       id: `driver_${id}`,
       name: `Driver ${id}`,
-      latitude: pickupLocation.latitude + Math.cos(angle) * distance,
-      longitude: pickupLocation.longitude + Math.sin(angle) * distance,
+      latitude: pickupLocation!.latitude + Math.cos(angle) * distance,
+      longitude: pickupLocation!.longitude + Math.sin(angle) * distance,
       distance: Math.round((distance * 111) * 10) / 10, // Convert to km
       vehicleType: randomVehicle.type,
       vehiclePlate: `${randomVehicle.plate}${plateNumber}`,
@@ -336,7 +347,7 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
       <MapView
         style={StyleSheet.absoluteFill}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-        region={pickupLocation}
+        region={pickupLocation || { latitude: 0, longitude: 0, latitudeDelta: 10, longitudeDelta: 10 }}
         showsUserLocation={false}
         showsMyLocationButton={false}
         zoomEnabled={true}
@@ -345,17 +356,19 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
         rotateEnabled={false}
       >
         {/* Pickup Location Marker */}
-        <Marker
-          coordinate={{
-            latitude: pickupLocation.latitude,
-            longitude: pickupLocation.longitude,
-          }}
-          anchor={{ x: 0.5, y: 0.5 }}
-        >
-          <View style={styles.pickupMarker}>
-            <Ionicons name="location" size={24} color="white" />
-          </View>
-        </Marker>
+        {pickupLocation && (
+          <Marker
+            coordinate={{
+              latitude: pickupLocation.latitude,
+              longitude: pickupLocation.longitude,
+            }}
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View style={styles.pickupMarker}>
+              <Ionicons name="location" size={24} color="white" />
+            </View>
+          </Marker>
+        )}
 
         {/* Driver Markers */}
         {driversFound.map((driver, index) => (
@@ -376,6 +389,13 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
           </Marker>
         ))}
       </MapView>
+
+      {/* Loading overlay while detecting location */}
+      {!pickupLocation && (
+        <View style={styles.loadingOverlay}>
+          <Text style={styles.loadingText}>Detecting location...</Text>
+        </View>
+      )}
 
       {/* Radar Overlay */}
       <View style={styles.radarContainer}>
@@ -438,6 +458,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: Colors.textSecondary,
   },
   radarContainer: {
     position: 'absolute',
@@ -570,6 +600,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.primary,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 1,
   },
 });
 

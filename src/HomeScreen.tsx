@@ -163,6 +163,12 @@ const HomeScreen: React.FC = () => {
         longitudeDelta: 0.05,
       };
 
+      // If user hasn't manually selected a pickup location yet, store GPS as default start coords
+      setStartLocationCoords(prev => prev || {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
       setCurrentLocation(newLocation);
       setMapError(null);
       
@@ -547,6 +553,13 @@ const HomeScreen: React.FC = () => {
       destination: selectedDestination,
     };
 
+    console.log('🚀 HomeScreen: Sending params to service flow:', {
+      service: selectedService,
+      startLocation,
+      startLocationCoords: pickupCoordsToSend,
+      hasDestination: !!selectedDestination,
+    });
+
     // Route to service-specific flows
     switch(selectedService) {
       case 'express':
@@ -582,8 +595,9 @@ const HomeScreen: React.FC = () => {
     setTrackingDriver(driver);
     setTrackingActive(true);
     
-    // Get coordinates for pickup and destination
-    const pickupCoords = getPickupCoordinates(pickupLocation);
+    // Get coordinates - prioritize the passed coordinates from tracking params
+    const params = route.params as any;
+    const pickupCoords = params?.pickupLocationCoords || getPickupCoordinates(pickupLocation);
     const destinationCoords = getDestinationCoordinates(destinationLocation);
     
     console.log('📍 Using pickup coords:', pickupCoords);
@@ -641,31 +655,22 @@ const HomeScreen: React.FC = () => {
     console.log('🔍 DEBUG: startLocationCoords state:', startLocationCoords);
     console.log('🔍 DEBUG: currentLocation state:', currentLocation);
     
-    // Use stored start location coordinates if available
+    // PRIORITY 1: Use stored start location coordinates if available (this is the real GPS location)
     if (startLocationCoords && startLocationCoords.latitude && startLocationCoords.longitude) {
       console.log('📍 Using stored start location coordinates:', startLocationCoords);
       return startLocationCoords;
     }
     
-    // Check if currentLocation has been updated from Quebec default (GPS obtained)
-    if (currentLocation.latitude !== 46.8139 && currentLocation.longitude !== -71.2082) {
-      console.log('📍 Using GPS current location (not Quebec default):', currentLocation);
+    // PRIORITY 2: Use current GPS location if it's not the Quebec default
+    if (currentLocation.latitude !== 46.8139 || currentLocation.longitude !== -71.2082) {
+      console.log('📍 Using current GPS location:', currentLocation);
       return {
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude
       };
     }
     
-    // If currentLocation is still Quebec, check if location permission was granted
-    if (locationPermissionGranted) {
-      console.log('📍 Location permission granted but still on Quebec, force using current coordinates');
-      return {
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude
-      };
-    }
-    
-    // Last resort: use Quebec coordinates but warn about it
+    // FALLBACK: Quebec coordinates (only if GPS failed completely)
     console.log('📍 WARNING: Using Quebec fallback coordinates - location permission may be denied');
     return {
       latitude: currentLocation.latitude,

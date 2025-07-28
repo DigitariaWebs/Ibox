@@ -163,104 +163,83 @@ const StorageFacilityMapScreen: React.FC<StorageFacilityMapScreenProps> = ({ nav
     }
   };
 
-  const generateFacilities = () => {
+  const generateFacilities = async () => {
     if (!userLocation) return;
 
-    // Use real places in Quebec City area with actual coordinates
-    const realFacilities = [
-      {
-        name: 'SecureSpace Québec',
-        baseAddress: '1200 Rue Bouvier',
-        latitude: 46.8306,
-        longitude: -71.2755,
-      },
-      {
-        name: 'StockBox Premium',
-        baseAddress: '2700 Boulevard Laurier',
-        latitude: 46.7639,
-        longitude: -71.3217,
-      },
-      {
-        name: 'Guardian Storage Sainte-Foy',
-        baseAddress: '3333 Chemin des Quatre-Bourgeois',
-        latitude: 46.7681,
-        longitude: -71.3370,
-      },
-      {
-        name: 'Urban Storage Hub',
-        baseAddress: '1050 Rue de la Chevrotière',
-        latitude: 46.8083,
-        longitude: -71.2190,
-      },
-      {
-        name: 'MaxiStock Centre-Ville',
-        baseAddress: '400 Rue Saint-Jean',
-        latitude: 46.8136,
-        longitude: -71.2080,
-      },
-      {
-        name: 'VaultKeep Storage Limoilou',
-        baseAddress: '1200 3e Avenue',
-        latitude: 46.8239,
-        longitude: -71.1989,
-      },
-      {
-        name: 'SafeHaven Units Charlesbourg',
-        baseAddress: '4600 1re Avenue',
-        latitude: 46.8594,
-        longitude: -71.2750,
-      },
-      {
-        name: 'MetroStorage Plus Beauport',
-        baseAddress: '3400 Avenue Royale',
-        latitude: 46.8833,
-        longitude: -71.1833,
-      },
+    // Dynamic generation around user's current position
+    const baseNames = [
+      'SecureSpace',
+      'StockBox',
+      'Guardian Storage',
+      'Urban Storage Hub',
+      'MaxiStock',
+      'VaultKeep',
+      'SafeHaven',
+      'MetroStorage',
     ];
 
     const amenitiesList = [
       ['24/7 Access', 'Climate Control', 'Security Cameras'],
       ['Drive-up Access', 'Moving Supplies', 'Insurance'],
       ['Elevator Access', 'Loading Dock', 'Package Acceptance'],
-      ['Business Hours', 'Online Payment', 'Month-to-Month'],
       ['Indoor Units', 'Outdoor Units', 'Vehicle Storage'],
       ['Temperature Control', 'Humidity Control', 'Fire Protection'],
       ['Ground Floor Access', 'Moving Equipment', 'Mail Service'],
       ['Covered Loading', 'Digital Access', 'Video Monitoring'],
+      ['Business Hours', 'Online Payment', 'Month-to-Month'],
     ];
 
     const generatedFacilities: StorageFacility[] = [];
 
-    realFacilities.forEach((realPlace, i) => {
-      // Calculate actual distance from user location
+    // Generate 7–8 facilities within ~5 km radius
+    const FACILITY_COUNT = 8;
+    const radiusKm = 5; // ~5 km radius
+    const radiusDeg = radiusKm / 111; // Rough conversion for degrees
+
+    for (let i = 0; i < FACILITY_COUNT; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const distance = Math.random() * radiusDeg;
+
+      const lat = userLocation.coords.latitude + distance * Math.cos(angle);
+      const lng = userLocation.coords.longitude + distance * Math.sin(angle);
+
+      // Calculate straight-line distance in km
       const distanceKm = Math.sqrt(
-        Math.pow((realPlace.latitude - userLocation.coords.latitude) * 111, 2) +
-        Math.pow((realPlace.longitude - userLocation.coords.longitude) * 111 * Math.cos(userLocation.coords.latitude * Math.PI / 180), 2)
+        Math.pow((lat - userLocation.coords.latitude) * 111, 2) +
+        Math.pow((lng - userLocation.coords.longitude) * 111 * Math.cos(userLocation.coords.latitude * Math.PI / 180), 2)
       );
 
-      const availability: 'available' | 'limited' | 'full' = 
-        Math.random() > 0.8 ? 'full' : 
-        Math.random() > 0.6 ? 'limited' : 'available';
+      // Reverse-geocode for a friendly address (best-effort)
+      let addressLabel = 'Nearby Location';
+      try {
+        const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+        if (geocode && geocode.length > 0) {
+          const g = geocode[0];
+          addressLabel = `${g.street || g.name || g.streetNumber || ''} ${g.city || g.region || ''}`.trim();
+        }
+      } catch (err) {
+        console.warn('Reverse geocode failed:', err);
+      }
+
+      const availability: 'available' | 'limited' | 'full' =
+        Math.random() > 0.8 ? 'full' : Math.random() > 0.6 ? 'limited' : 'available';
 
       generatedFacilities.push({
         id: `facility-${i}`,
-        name: realPlace.name,
-        address: `${realPlace.baseAddress}, Québec, QC`,
-        latitude: realPlace.latitude,
-        longitude: realPlace.longitude,
+        name: `${baseNames[i % baseNames.length]} ${i + 1}`,
+        address: addressLabel,
+        latitude: lat,
+        longitude: lng,
         distance: Math.round(distanceKm * 10) / 10,
-        securityRating: Math.round((Math.random() * 2 + 3) * 10) / 10, // 3.0 to 5.0
+        securityRating: Math.round((Math.random() * 2 + 3) * 10) / 10, // 3.0 – 5.0
         availability,
         amenities: amenitiesList[i % amenitiesList.length],
-        priceMultiplier: Math.round((Math.random() * 0.4 + 0.8) * 100) / 100, // 0.8 to 1.2
+        priceMultiplier: Math.round((Math.random() * 0.4 + 0.8) * 100) / 100, // 0.8 – 1.2
       });
-    });
+    }
 
-    // Sort by distance
     generatedFacilities.sort((a, b) => a.distance - b.distance);
-    
-    console.log('🏢 StorageFacilityMap: Generated facilities with real coordinates:', generatedFacilities.length);
-    console.log('🏢 First few facilities:', generatedFacilities.slice(0, 3).map(f => ({ name: f.name, coords: { lat: f.latitude, lng: f.longitude }, distance: f.distance })));
+    console.log('🏢 StorageFacilityMap: Generated facilities near user:', generatedFacilities.slice(0, 3));
     setFacilities(generatedFacilities);
   };
 
