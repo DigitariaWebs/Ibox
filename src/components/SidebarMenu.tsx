@@ -8,6 +8,7 @@ import {
   Dimensions,
   StatusBar,
   Image,
+  Alert,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -24,6 +25,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { Colors } from '../config/colors';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.8;
@@ -119,6 +121,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
   onNavigate,
   activeScreen = 'HomeScreen',
 }) => {
+  const { logout } = useAuth();
   const translateX = useSharedValue(-SIDEBAR_WIDTH);
   const backdropOpacity = useSharedValue(0);
 
@@ -170,6 +173,31 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
   const handleMenuItemPress = (screen: string) => {
     onNavigate(screen);
     onClose();
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Sign Out', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              onClose(); // Close sidebar first
+              await logout();
+              console.log('✅ User logged out successfully from sidebar');
+              // Navigation will happen automatically via AuthContext state change
+            } catch (error) {
+              console.error('❌ Logout error:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          }
+        },
+      ]
+    );
   };
 
   if (!visible) return null;
@@ -266,7 +294,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
           
           {/* Logout */}
           <Animated.View entering={FadeIn.delay(500)}>
-            <TouchableOpacity style={styles.logoutButton} activeOpacity={0.7}>
+            <TouchableOpacity 
+              style={styles.logoutButton} 
+              activeOpacity={0.7}
+              onPress={handleLogout}
+            >
               <View style={[styles.iconWrapper, styles.logoutIconWrapper]}>
                 <Ionicons name="log-out-outline" size={22} color={Colors.error} />
               </View>

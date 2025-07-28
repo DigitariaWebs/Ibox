@@ -112,9 +112,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
           lastName: 'User',
         };
 
-        await login(userData);
-        console.log('✅ Email login successful for:', email);
-        handleSuccessfulLogin();
+              await login(userData, 'customer'); // Email login defaults to customer
+      console.log('✅ Email login successful for:', email);
+      handleSuccessfulLogin();
       } catch (error) {
         console.error('❌ Email login error:', error);
       } finally {
@@ -139,8 +139,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
         lastName: 'User',
       };
 
-      await login(userData);
-      console.log('✅ Social login successful with:', provider);
+      await login(userData, accountType || 'customer');
+      console.log('✅ Social login successful with:', provider, 'as', accountType || 'customer');
       handleSuccessfulLogin(accountType);
     } catch (error) {
       console.error('❌ Social login error:', error);
@@ -168,8 +168,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
   const handleSuccessfulLogin = (accountType?: 'transporter' | 'customer') => {
     // Close the modal first
     onClose();
-    // Note: Navigation will be handled automatically by AuthContext useEffect
-    console.log('🎉 Login modal closed, AuthContext will handle navigation');
+    
+    // Navigation will now be handled automatically by AuthContext based on userType
+    console.log('🎉 Login modal closed, AuthContext will handle navigation based on userType:', accountType || 'customer');
   };
 
   const panResponder = PanResponder.create({

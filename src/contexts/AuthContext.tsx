@@ -7,6 +7,7 @@ interface User {
   firstName: string;
   lastName: string;
   phone?: string;
+  userType?: 'customer' | 'transporter';
 }
 
 interface AuthContextType {
@@ -14,7 +15,7 @@ interface AuthContextType {
   hasCompletedOnboarding: boolean;
   user: User | null;
   isLoading: boolean;
-  login: (user: User) => Promise<void>;
+  login: (user: User, userType?: 'customer' | 'transporter') => Promise<void>;
   logout: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   skipOnboarding: () => Promise<void>;
@@ -78,17 +79,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (userData: User) => {
+  const login = async (userData: User, userType?: 'customer' | 'transporter') => {
     try {
+      // Add userType to userData if provided
+      const userWithType = {
+        ...userData,
+        userType: userType || 'customer' // default to customer if not specified
+      };
+      
       setIsAuthenticated(true);
-      setUser(userData);
+      setUser(userWithType);
 
       await Promise.all([
         AsyncStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, 'true'),
-        AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData)),
+        AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userWithType)),
       ]);
 
-      console.log('✅ User logged in and cached:', userData.email);
+      console.log('✅ User logged in and cached:', userWithType.email, 'as', userWithType.userType);
     } catch (error) {
       console.error('❌ Error caching login state:', error);
     }

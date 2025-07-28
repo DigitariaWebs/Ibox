@@ -424,8 +424,28 @@ const TransporterHomeScreen: React.FC<any> = ({ navigation }) => {
           text: 'Accepter', 
           onPress: () => {
             console.log('Request accepted:', requestId);
+            
+            // Find the accepted order
+            const acceptedOrder = visibleRequests.find(req => req.id === requestId);
+            if (acceptedOrder) {
+              // Add coordinates to the order for map navigation
+              const orderWithCoords = {
+                ...acceptedOrder,
+                pickupCoords: {
+                  latitude: 45.5017 + (Math.random() - 0.5) * 0.01, // Montreal area with some variation
+                  longitude: -73.5673 + (Math.random() - 0.5) * 0.01,
+                },
+                deliveryCoords: {
+                  latitude: 45.5017 + (Math.random() - 0.5) * 0.02, // Different location in Montreal area
+                  longitude: -73.5673 + (Math.random() - 0.5) * 0.02,
+                }
+              };
+              
+              // Navigate to driver mode with the order details
+              navigation.navigate('DriverModeScreen', { order: orderWithCoords });
+            }
+            
             removeRequest(requestId);
-            // TODO: Handle accept logic - navigate to delivery screen
           }
         }
       ]

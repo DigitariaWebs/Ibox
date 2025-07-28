@@ -21,6 +21,7 @@ import LoginScreen from './src/LoginScreen';
 import HomeScreen from './src/HomeScreen';
 import ProfileScreen from './src/ProfileScreen';
 import TransporterHomeScreen from './src/screens/TransporterHomeScreen';
+import DriverModeScreen from './src/screens/DriverModeScreen';
 import SettingsScreen from './src/SettingsScreen';
 import { SignUpProvider } from './src/contexts/SignUpContext';
 import OnboardingEntryScreen from './src/screens/signup/OnboardingEntryScreen';
@@ -139,7 +140,7 @@ const IconShowcase: React.FC = () => (
 const Stack = createNativeStackNavigator();
 
 const MainNavigator: React.FC = () => {
-  const { isAuthenticated, hasCompletedOnboarding, isLoading } = useAuth();
+  const { isAuthenticated, hasCompletedOnboarding, isLoading, user } = useAuth();
   const navigationRef = useRef<any>(null);
 
   // Handle navigation when auth state changes
@@ -148,11 +149,12 @@ const MainNavigator: React.FC = () => {
 
     const handleAuthStateChange = () => {
       if (hasCompletedOnboarding && isAuthenticated) {
-        // User is authenticated - navigate to home
-        console.log('🏠 Navigating to HomeScreen (authenticated)');
+        // User is authenticated - navigate based on user type
+        const targetScreen = user?.userType === 'transporter' ? 'TransporterHomeScreen' : 'HomeScreen';
+        console.log(`🏠 Navigating to ${targetScreen} (authenticated as ${user?.userType || 'customer'})`);
         navigationRef.current.reset({
           index: 0,
-          routes: [{ name: 'HomeScreen' }],
+          routes: [{ name: targetScreen }],
         });
       } else if (hasCompletedOnboarding && !isAuthenticated) {
         // User has seen onboarding but needs to log in
@@ -174,7 +176,7 @@ const MainNavigator: React.FC = () => {
     // Small delay to ensure navigation is ready
     const timer = setTimeout(handleAuthStateChange, 100);
     return () => clearTimeout(timer);
-  }, [isAuthenticated, hasCompletedOnboarding, isLoading]);
+  }, [isAuthenticated, hasCompletedOnboarding, isLoading, user]);
 
   // Show loading screen while checking cached auth state
   if (isLoading) {
@@ -185,8 +187,8 @@ const MainNavigator: React.FC = () => {
   let initialRouteName = 'OnboardingScreen';
   
   if (hasCompletedOnboarding && isAuthenticated) {
-    // User has completed onboarding and is logged in -> go to home
-    initialRouteName = 'HomeScreen';
+    // User has completed onboarding and is logged in -> go to appropriate screen based on user type
+    initialRouteName = user?.userType === 'transporter' ? 'TransporterHomeScreen' : 'HomeScreen';
   } else if (hasCompletedOnboarding && !isAuthenticated) {
     // User has seen onboarding before but needs to log in
     initialRouteName = 'AuthSelection';
@@ -198,6 +200,7 @@ const MainNavigator: React.FC = () => {
   console.log('🎯 Navigation decision:', {
     isAuthenticated,
     hasCompletedOnboarding,
+    userType: user?.userType,
     initialRouteName,
   });
 
@@ -219,6 +222,8 @@ const MainNavigator: React.FC = () => {
         
         {/* Main App Screens */}
         <Stack.Screen name="HomeScreen" component={HomeScreen} />
+        <Stack.Screen name="TransporterHomeScreen" component={TransporterHomeScreen} />
+        <Stack.Screen name="DriverModeScreen" component={DriverModeScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Loading" component={LoadingScreen} />

@@ -45,7 +45,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
         phone: '+1 (555) 123-4567',
       };
 
-      await login(userData);
+      await login(userData, 'customer'); // Email login defaults to customer
       
       // Navigation will happen automatically via AuthContext state change
       console.log('✅ Login successful for:', email);
@@ -73,8 +73,13 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
         lastName: 'User',
       };
 
-      await login(userData);
-      console.log('✅ Social login successful with:', provider);
+      // Determine user type based on provider
+      const userType = provider === 'facebook' ? 'transporter' : 'customer';
+      
+      await login(userData, userType);
+      console.log('✅ Social login successful with:', provider, 'as', userType);
+      
+      // Navigation will now be handled automatically by AuthContext based on userType
       
     } catch (error) {
       console.error('❌ Social login error:', error);
