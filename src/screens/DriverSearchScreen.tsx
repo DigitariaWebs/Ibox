@@ -34,6 +34,9 @@ interface Driver {
   latitude: number;
   longitude: number;
   distance: number;
+  vehicleType?: string;
+  vehiclePlate?: string;
+  vehicleIcon?: string;
 }
 
 const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
@@ -42,14 +45,20 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
 }) => {
   const [driversFound, setDriversFound] = useState<Driver[]>([]);
   const [searchComplete, setSearchComplete] = useState(false);
-  const [searchText, setSearchText] = useState('Searching for drivers...');
+  const [searchText, setSearchText] = useState('');
 
-  // Get pickup location from route params or use default
+  // Get service type and pickup location from route params
+  const getServiceType = () => {
+    const { service, serviceType } = route.params || {};
+    return serviceType || service || 'express';
+  };
+
   const getPickupLocation = () => {
     console.log('🔍 DEBUG: DriverSearchScreen route.params:', route.params);
-    const { startLocationCoords, destination } = route.params || {};
+    const { startLocationCoords, destination, service, serviceType } = route.params || {};
     console.log('🔍 DEBUG: Extracted startLocationCoords:', startLocationCoords);
     console.log('🔍 DEBUG: Extracted destination:', destination);
+    console.log('🔍 DEBUG: Service type:', serviceType || service);
     
     // If valid pickup coordinates are provided, use them.
     if (
@@ -83,6 +92,59 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
   };
 
   const pickupLocation = getPickupLocation();
+  const currentServiceType = getServiceType();
+
+  // Vehicle configurations by service type
+  const getVehiclesByService = (serviceType: string) => {
+    switch (serviceType) {
+      case 'moving':
+        return {
+          searchText: 'Searching for movers...',
+          completeText: 'Mover found!',
+          vehicles: [
+            { type: 'Camion Cube Plaque L', plate: 'MOV-', icon: 'cube-outline' },
+            { type: 'Mercedes Sprinter', plate: 'SPR-', icon: 'bus-outline' },
+            { type: 'Iveco Daily', plate: 'IVE-', icon: 'cube-outline' },
+            { type: 'Ford Transit', plate: 'TRA-', icon: 'bus-outline' },
+            { type: 'Renault Master', plate: 'MAS-', icon: 'cube-outline' },
+          ]
+        };
+      case 'storage':
+        return {
+          searchText: 'Searching for storage drivers...',
+          completeText: 'Storage driver found!',
+          vehicles: [
+            { type: 'Mercedes Sprinter', plate: 'STO-', icon: 'bus-outline' },
+            { type: 'Ford Transit', plate: 'TRA-', icon: 'bus-outline' },
+            { type: 'Peugeot Boxer', plate: 'BOX-', icon: 'cube-outline' },
+          ]
+        };
+      case 'standard':
+        return {
+          searchText: 'Searching for drivers...',
+          completeText: 'Driver found!',
+          vehicles: [
+            { type: 'Toyota Corolla', plate: 'STD-', icon: 'car-outline' },
+            { type: 'Honda Civic', plate: 'CIV-', icon: 'car-outline' },
+            { type: 'Ford Focus', plate: 'FOC-', icon: 'car-outline' },
+            { type: 'Volkswagen Golf', plate: 'GLF-', icon: 'car-outline' },
+          ]
+        };
+      default: // express
+        return {
+          searchText: 'Searching for couriers...',
+          completeText: 'Courier found!',
+          vehicles: [
+            { type: 'Honda PCX', plate: 'EXP-', icon: 'speedometer-outline' },
+            { type: 'Yamaha NMAX', plate: 'YAM-', icon: 'speedometer-outline' },
+            { type: 'Smart ForTwo', plate: 'SMT-', icon: 'car-sport-outline' },
+            { type: 'Toyota Yaris', plate: 'YAR-', icon: 'car-outline' },
+          ]
+        };
+    }
+  };
+
+  const vehicleConfig = getVehiclesByService(currentServiceType);
 
   // Animation values
   const radarScale1 = useSharedValue(0);
@@ -94,6 +156,8 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
   const progressValue = useSharedValue(0);
 
   useEffect(() => {
+    // Set initial search text based on service type
+    setSearchText(vehicleConfig.searchText);
     startDriverSearch();
   }, []);
 
@@ -160,7 +224,13 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
     setTimeout(() => runOnJS(addDriver)(generateDriver(1)), 2000);
     setTimeout(() => runOnJS(addDriver)(generateDriver(2)), 3500);
     setTimeout(() => runOnJS(addDriver)(generateDriver(3)), 5000);
-    setTimeout(() => runOnJS(setSearchText)('Found drivers nearby!'), 5500);
+    setTimeout(() => {
+      const nearbyText = currentServiceType === 'moving' ? 'Found movers nearby!' : 
+                        currentServiceType === 'storage' ? 'Found storage drivers nearby!' :
+                        currentServiceType === 'express' ? 'Found couriers nearby!' :
+                        'Found drivers nearby!';
+      runOnJS(setSearchText)(nearbyText);
+    }, 5500);
     setTimeout(() => runOnJS(addDriver)(generateDriver(4)), 6000);
     setTimeout(() => runOnJS(completeSearch)(), 7000);
   };
@@ -169,12 +239,19 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
     const angle = (Math.random() * 360) * (Math.PI / 180);
     const distance = Math.random() * 0.008 + 0.002; // Random distance within ~1km
     
+    // Select random vehicle from service-specific vehicles
+    const randomVehicle = vehicleConfig.vehicles[Math.floor(Math.random() * vehicleConfig.vehicles.length)];
+    const plateNumber = Math.floor(Math.random() * 900) + 100; // Random 3-digit number
+    
     return {
       id: `driver_${id}`,
       name: `Driver ${id}`,
       latitude: pickupLocation.latitude + Math.cos(angle) * distance,
       longitude: pickupLocation.longitude + Math.sin(angle) * distance,
       distance: Math.round((distance * 111) * 10) / 10, // Convert to km
+      vehicleType: randomVehicle.type,
+      vehiclePlate: `${randomVehicle.plate}${plateNumber}`,
+      vehicleIcon: randomVehicle.icon,
     };
   };
 
@@ -184,18 +261,35 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
 
   const completeSearch = () => {
     setSearchComplete(true);
-    setSearchText('Driver found!');
+    setSearchText(vehicleConfig.completeText);
     
     // Navigate to driver found screen after a short delay
     setTimeout(() => {
+      // Select a random vehicle for the final driver
+      const randomVehicle = vehicleConfig.vehicles[Math.floor(Math.random() * vehicleConfig.vehicles.length)];
+      const plateNumber = Math.floor(Math.random() * 900) + 100;
+      
+             // Generate service-appropriate driver names
+       const getDriverName = () => {
+         const names: { [key: string]: string[] } = {
+           moving: ['Pierre Dufour', 'Jacques Martin', 'Michel Tremblay', 'André Côté'],
+           storage: ['Marie Gagnon', 'Luc Bouchard', 'Sylvie Roy', 'Denis Lavoie'],
+           standard: ['Alex Johnson', 'Sarah Wilson', 'Mike Chen', 'Emma Davis'],
+           express: ['Carlos Rodriguez', 'Nina Patel', 'Jake Thompson', 'Lisa Park']
+         };
+         const serviceNames = names[currentServiceType] || names.express;
+         return serviceNames[Math.floor(Math.random() * serviceNames.length)];
+       };
+
       const selectedDriver = {
-        id: 'driver_john',
-        name: 'John Martinez',
-        rating: 4.8,
-        reviews: 127,
-        vehicleType: 'Honda Civic',
-        vehiclePlate: 'ABC-123',
-        estimatedArrival: '8-12 min',
+        id: 'driver_selected',
+        name: getDriverName(),
+        rating: 4.6 + Math.random() * 0.4, // 4.6-5.0 rating
+        reviews: Math.floor(Math.random() * 200) + 50, // 50-250 reviews
+        vehicleType: randomVehicle.type,
+        vehiclePlate: `${randomVehicle.plate}${plateNumber}`,
+        vehicleIcon: randomVehicle.icon,
+        estimatedArrival: `${Math.floor(Math.random() * 10) + 5}-${Math.floor(Math.random() * 5) + 12} min`,
         photo: 'https://randomuser.me/api/portraits/men/32.jpg',
         phone: '+1 (555) 123-4567',
       };

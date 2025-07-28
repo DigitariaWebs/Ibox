@@ -216,7 +216,13 @@ const DriverFoundScreen: React.FC<DriverFoundScreenProps> = ({
         {/* Vehicle Info */}
         <View style={styles.vehicleSection}>
           <View style={styles.vehicleInfo}>
-            <Ionicons name="car" size={24} color={Colors.textSecondary} />
+            <View style={styles.vehicleIconContainer}>
+              <Ionicons 
+                name={selectedDriver.vehicleIcon || "car"} 
+                size={24} 
+                color={Colors.primary} 
+              />
+            </View>
             <View style={styles.vehicleDetails}>
               <Text style={styles.vehicleType}>{selectedDriver.vehicleType}</Text>
               <Text style={styles.vehiclePlate}>{selectedDriver.vehiclePlate}</Text>
@@ -404,6 +410,14 @@ const styles = StyleSheet.create({
   },
   vehicleDetails: {
     flex: 1,
+  },
+  vehicleIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   vehicleType: {
     fontSize: 16,
