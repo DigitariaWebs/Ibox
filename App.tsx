@@ -58,11 +58,17 @@ import ExpressFlow from './src/screens/flows/ExpressFlow';
 import StandardFlow from './src/screens/flows/StandardFlow';
 import MovingFlow from './src/screens/flows/MovingFlow';
 import StorageFlow from './src/screens/flows/StorageFlow';
+import MovingOrderSummary from './src/screens/flows/MovingOrderSummary';
+import StorageOrderSummary from './src/screens/flows/StorageOrderSummary';
+import ExpressOrderSummary from './src/screens/flows/ExpressOrderSummary';
+import StandardOrderSummary from './src/screens/flows/StandardOrderSummary';
+
+// Auth Context
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import AuthLoadingScreen from './src/screens/AuthLoadingScreen';
 
 // Import store and actions
 import { increment, decrement, incrementByAmount } from './src/store/store';
-import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 function useLoadFonts() {
   const [loaded, setLoaded] = React.useState(false);
@@ -285,6 +291,45 @@ const MainNavigator: React.FC = () => {
           }}
         />
         
+        {/* Order Summary Screens */}
+        <Stack.Screen 
+          name="MovingOrderSummary" 
+          component={MovingOrderSummary}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="StorageOrderSummary" 
+          component={StorageOrderSummary}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="ExpressOrderSummary" 
+          component={ExpressOrderSummary}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="StandardOrderSummary" 
+          component={StandardOrderSummary}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        
+        {/* Booking Flow Screens */}
         <Stack.Screen 
           name="Measuring" 
           component={MeasuringScreen}

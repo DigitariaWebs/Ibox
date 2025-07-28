@@ -22,7 +22,10 @@ import Animated, {
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 import { Colors } from '../config/colors';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// Safe window dimensions
+const windowDims = Dimensions.get('window');
+const SCREEN_WIDTH = windowDims?.width || 375;
+const SCREEN_HEIGHT = windowDims?.height || 667;
 
 type RootStackParamList = {
   PackagePhoto: {
@@ -50,10 +53,16 @@ const PackagePhotoScreen: React.FC<PackagePhotoScreenProps> = ({
   navigation,
   route,
 }) => {
+  console.log('📷 PackagePhoto: Component mounted');
+  
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  
+  // Move dimensions inside component
+  // const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+  console.log('📷 PackagePhoto: Screen dimensions:', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
   
   const captureScale = useSharedValue(1);
   const photoOpacity = useSharedValue(0);
@@ -125,10 +134,27 @@ const PackagePhotoScreen: React.FC<PackagePhotoScreenProps> = ({
 
   const continueToNext = () => {
     if (capturedPhoto) {
-      navigation.navigate('Measuring', {
-        ...route.params,
-        packagePhoto: capturedPhoto,
-      });
+      const { nextScreen, serviceType } = route.params;
+      
+      // Navigate based on service type or nextScreen parameter
+      if (nextScreen) {
+        console.log('📷 PackagePhoto: Navigating to', nextScreen);
+        navigation.navigate(nextScreen, {
+          ...route.params,
+          packagePhoto: capturedPhoto,
+        });
+      } else if (serviceType === 'standard') {
+        navigation.navigate('Measuring', {
+          ...route.params,
+          packagePhoto: capturedPhoto,
+        });
+      } else {
+        // Default flow for other services
+        navigation.navigate('Measuring', {
+          ...route.params,
+          packagePhoto: capturedPhoto,
+        });
+      }
     }
   };
 

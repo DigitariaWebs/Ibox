@@ -22,8 +22,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 import { Colors } from '../config/colors';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 type RootStackParamList = {
   Measuring: {
     service: string;
@@ -129,7 +127,7 @@ const MeasuringScreen: React.FC<MeasuringScreenProps> = ({
 
     // Navigate to next screen after 4 seconds
     setTimeout(() => {
-      navigation.replace('OrderSummary', {
+      navigation.replace('StandardOrderSummary', {
         ...route.params,
         measurements: {
           width: Math.round((Math.random() * 20 + 10) * 10) / 10,

@@ -150,7 +150,6 @@ const styles = StyleSheet.create({
   dotsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: -4, // Negative margin to compensate for dot margins
   },
   dot: {
     width: 8,

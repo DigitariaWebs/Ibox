@@ -19,8 +19,6 @@ import Animated, {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '../config/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 interface OrderSummaryScreenProps {
   navigation: any;
   route: any;
@@ -30,8 +28,23 @@ const OrderSummaryScreen: React.FC<OrderSummaryScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { service, startLocation, startLocationCoords, destination, packagePhoto, measurements, price } = route.params;
+  console.log('📋 OrderSummary: Component mounted');
+  console.log('📋 OrderSummary: Route params received:', Object.keys(route.params || {}));
+  
+  const { service, startLocation, startLocationCoords, destination, packagePhoto, measurements: passedMeasurements, price: passedPrice, apartmentSize, inventoryItems, additionalServices, urgency, packageSize, specialInstructions: specialInstr, specialNotes } = route.params;
+  
+  // Ensure measurements object exists
+  const measurements = passedMeasurements || { width: '-', height: '-', depth: '-', weight: '-' };
+  // Ensure price object exists
+  const price = passedPrice || { base: 0, size: 0, weight: 0, total: 0 };
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Move Dimensions.get inside component to avoid undefined issues during navigation
+  const screenDimensions = Dimensions.get('window');
+  const SCREEN_WIDTH = screenDimensions?.width || 375; // fallback width
+  
+  console.log('📋 OrderSummary: Screen dimensions:', screenDimensions);
+  console.log('📋 OrderSummary: Using SCREEN_WIDTH:', SCREEN_WIDTH);
   
   const buttonScale = useSharedValue(1);
 

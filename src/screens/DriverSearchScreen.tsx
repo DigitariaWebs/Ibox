@@ -23,8 +23,6 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../config/colors';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 interface DriverSearchScreenProps {
   navigation: any;
   route: any;

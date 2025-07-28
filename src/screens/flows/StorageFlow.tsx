@@ -53,6 +53,8 @@ interface PickupService {
 }
 
 const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
+  console.log('🏪 StorageFlow: Component mounted');
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedUnit, setSelectedUnit] = useState<string>('');
   const [selectedDuration, setSelectedDuration] = useState<string>('');
@@ -63,6 +65,8 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
   const [specialInstructions, setSpecialInstructions] = useState<string>('');
 
   const buttonScale = useSharedValue(1);
+
+  console.log('🏪 StorageFlow: Initial state set, currentStep =', currentStep);
 
   const storageUnits: StorageUnit[] = [
     {
@@ -182,19 +186,26 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
     } else {
       // Navigate to order summary
       setTimeout(() => {
+        console.log('🏪 StorageFlow: Navigating to StorageOrderSummary');
         const selectedUnitData = storageUnits.find(unit => unit.id === selectedUnit);
         const selectedDurationData = storageDurations.find(duration => duration.id === selectedDuration);
         const selectedPickupData = pickupServices.find(pickup => pickup.id === selectedPickup);
         
-        navigation.navigate('OrderSummary', {
+        console.log('🏪 StorageFlow: Order data prepared:', {
+          unit: selectedUnitData?.title,
+          duration: selectedDurationData?.title,
+          climateControl: needsClimateControl,
+          needsPickup: selectedPickupData?.id === 'pickup'
+        });
+        
+        navigation.navigate('StorageOrderSummary', {
           ...route.params,
-          storageUnit: selectedUnitData,
-          storageDuration: selectedDurationData,
-          pickupService: selectedPickupData,
-          itemDescription,
-          needsClimateControl,
-          accessFrequency,
-          specialInstructions,
+          selectedUnit: selectedUnitData,
+          selectedDuration: selectedDurationData,
+          selectedAccess: accessFrequency,
+          climateControl: needsClimateControl,
+          needsPickup: selectedPickupData?.id === 'pickup',
+          specialRequirements: specialInstructions,
           serviceType: 'storage',
         });
       }, 200);
@@ -826,7 +837,6 @@ const styles = StyleSheet.create({
   },
   accessOptions: {
     flexDirection: 'row',
-    marginHorizontal: -6, // Negative margin to compensate for option margins
   },
   accessOption: {
     flex: 1,
