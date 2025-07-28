@@ -32,6 +32,9 @@ const DriverFoundScreen: React.FC<DriverFoundScreenProps> = ({
   route,
 }) => {
   const { selectedDriver, service, startLocation, startLocationCoords, destination } = route.params;
+  console.log('🔍 DEBUG: DriverFoundScreen received startLocationCoords:', startLocationCoords);
+  console.log('🔍 DEBUG: DriverFoundScreen received full params:', route.params);
+  
   const [etaMinutes, setEtaMinutes] = useState(10);
   const [etaSeconds, setEtaSeconds] = useState(0);
 

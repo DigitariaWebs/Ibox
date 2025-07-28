@@ -15,7 +15,8 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { Text, Icon } from './ui';
 import { Colors } from './config/colors';
-import { RootState, logout } from './store/store';
+import { RootState } from './store/store';
+import { useAuth } from './contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -24,19 +25,17 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [locationEnabled, setLocationEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-
-  // Get user data from Redux store
+  const { logout, user } = useAuth();
   const dispatch = useDispatch();
-  const accountType = useSelector((state: RootState) => state.user.accountType);
-  const userData = useSelector((state: RootState) => state.user.userData);
+  const user2 = useSelector((state: RootState) => state.user);
+  const [darkMode, setDarkMode] = useState(false);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [locationServices, setLocationServices] = useState(true);
+  const [emailMarketing, setEmailMarketing] = useState(false);
 
   // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -186,22 +185,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
-      'Déconnexion',
-      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      'Sign Out',
+      'Are you sure you want to sign out?',
       [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Déconnexion',
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Sign Out', 
           style: 'destructive',
-          onPress: () => {
-            dispatch(logout());
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'AuthSelection' }],
-            });
-          },
+          onPress: async () => {
+            try {
+              await logout();
+              console.log('✅ User logged out successfully');
+              // Navigation will happen automatically via AuthContext state change
+            } catch (error) {
+              console.error('❌ Logout error:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          }
         },
       ]
     );

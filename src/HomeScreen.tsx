@@ -526,13 +526,46 @@ const HomeScreen: React.FC = () => {
     console.log('🔍 DEBUG: Navigating with destination:', selectedDestination);
     setShowBackButton(false);
     
-    // Navigate to package photo screen to start booking flow
-    navigation.navigate('PackagePhoto', {
+    // Ensure we always have a valid set of pickup coordinates.
+    // If the user has not explicitly chosen a start location yet, fall back to the
+    // current GPS/location that the map is centered on. This guarantees downstream
+    // screens (e.g. DriverSearch) always receive a pickup point to work with.
+    const fallbackPickupCoords = {
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude,
+    };
+
+    const pickupCoordsToSend =
+      startLocationCoords && startLocationCoords.latitude != null && startLocationCoords.longitude != null
+        ? startLocationCoords
+        : fallbackPickupCoords;
+    
+    const baseParams = {
       service: selectedService,
       startLocation,
-      startLocationCoords,
+      startLocationCoords: pickupCoordsToSend,
       destination: selectedDestination,
-    });
+    };
+
+    // Route to service-specific flows
+    switch(selectedService) {
+      case 'express':
+        navigation.navigate('ExpressFlow', baseParams);
+        break;
+      case 'standard': 
+        navigation.navigate('StandardFlow', baseParams);
+        break;
+      case 'moving':
+        navigation.navigate('MovingFlow', baseParams);
+        break;
+      case 'storage':
+        navigation.navigate('StorageFlow', baseParams);
+        break;
+      default:
+        // Fallback to original flow for any undefined services
+        navigation.navigate('PackagePhoto', baseParams);
+        break;
+    }
   };
 
   const handleBackPress = () => {

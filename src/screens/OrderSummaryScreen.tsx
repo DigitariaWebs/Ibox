@@ -30,7 +30,7 @@ const OrderSummaryScreen: React.FC<OrderSummaryScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { service, startLocation, destination, packagePhoto, measurements, price } = route.params;
+  const { service, startLocation, startLocationCoords, destination, packagePhoto, measurements, price } = route.params;
   const [isProcessing, setIsProcessing] = useState(false);
   
   const buttonScale = useSharedValue(1);
@@ -57,6 +57,8 @@ const OrderSummaryScreen: React.FC<OrderSummaryScreenProps> = ({
     });
 
     setTimeout(() => {
+      console.log('🔍 DEBUG: OrderSummary navigating to DriverSearch with startLocationCoords:', startLocationCoords);
+      console.log('🔍 DEBUG: Full route.params being passed:', route.params);
       navigation.navigate('DriverSearch', {
         ...route.params,
         bookingId: `BK${Date.now()}`,

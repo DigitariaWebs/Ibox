@@ -28,11 +28,13 @@ type RootStackParamList = {
   PackagePhoto: {
     service: string;
     startLocation: string;
+    startLocationCoords: {latitude: number; longitude: number};
     destination: any;
   };
   Measuring: {
     service: string;
     startLocation: string;
+    startLocationCoords: {latitude: number; longitude: number};
     destination: any;
     packagePhoto: string;
   };

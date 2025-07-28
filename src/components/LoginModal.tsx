@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Text, Input, Button, Icon } from '../ui';
 import { Colors } from '../config/colors';
+import { useAuth } from '../contexts/AuthContext';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -36,6 +37,7 @@ interface LoginModalProps {
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation }) => {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -98,11 +100,26 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
       setIsLoading(true);
       console.log('Continue with email:', email);
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setIsLoading(false);
-      handleSuccessfulLogin();
+      try {
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Create user data for AuthContext
+        const userData = {
+          id: `email_user_${Date.now()}`,
+          email: email.trim(),
+          firstName: 'Email',
+          lastName: 'User',
+        };
+
+        await login(userData);
+        console.log('✅ Email login successful for:', email);
+        handleSuccessfulLogin();
+      } catch (error) {
+        console.error('❌ Email login error:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -110,11 +127,26 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
     setIsLoading(true);
     console.log('Login with:', provider, 'as:', accountType);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsLoading(false);
-    handleSuccessfulLogin(accountType);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Create user data for AuthContext
+      const userData = {
+        id: `${provider}_user_${Date.now()}`,
+        email: `user@${provider}.com`,
+        firstName: 'Social',
+        lastName: 'User',
+      };
+
+      await login(userData);
+      console.log('✅ Social login successful with:', provider);
+      handleSuccessfulLogin(accountType);
+    } catch (error) {
+      console.error('❌ Social login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEmailFocus = () => {
@@ -136,16 +168,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
   const handleSuccessfulLogin = (accountType?: 'transporter' | 'customer') => {
     // Close the modal first
     onClose();
-    // Navigate to appropriate screen based on account type
-    setTimeout(() => {
-      if (navigation) {
-        if (accountType === 'transporter') {
-          navigation.navigate('TransporterHomeScreen');
-        } else {
-          navigation.navigate('HomeScreen');
-        }
-      }
-    }, 300);
+    // Note: Navigation will be handled automatically by AuthContext useEffect
+    console.log('🎉 Login modal closed, AuthContext will handle navigation');
   };
 
   const panResponder = PanResponder.create({

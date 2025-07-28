@@ -7,12 +7,16 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Text, Input, Button, Icon } from './ui';
 import { Colors } from './config/colors';
+import { useAuth } from './contexts/AuthContext';
 
 const LoginScreen: React.FC<any> = ({ navigation }) => {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleBackPress = () => {
     if (navigation && navigation.goBack) {
@@ -20,16 +24,64 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
     }
   };
 
-  const handleEmailContinue = () => {
-    if (email.trim()) {
-      // Handle email login logic
-      console.log('Continue with email:', email);
+  const handleEmailContinue = async () => {
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your email address.');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Simulate login - in real app this would call your auth API
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+      
+      // Mock user data - replace with actual API response
+      const userData = {
+        id: 'user_123',
+        email: email.trim(),
+        firstName: 'John',
+        lastName: 'Doe',
+        phone: '+1 (555) 123-4567',
+      };
+
+      await login(userData);
+      
+      // Navigation will happen automatically via AuthContext state change
+      console.log('✅ Login successful for:', email);
+      
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      Alert.alert('Login Failed', 'Please check your credentials and try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: 'facebook' | 'google' | 'apple') => {
-    // Handle social login logic
-    console.log('Login with:', provider);
+  const handleSocialLogin = async (provider: 'facebook' | 'google' | 'apple') => {
+    setIsLoading(true);
+    
+    try {
+      // Simulate social login - in real app this would integrate with social providers
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mock user data from social provider
+      const userData = {
+        id: `${provider}_user_123`,
+        email: `user@${provider}.com`,
+        firstName: 'Social',
+        lastName: 'User',
+      };
+
+      await login(userData);
+      console.log('✅ Social login successful with:', provider);
+      
+    } catch (error) {
+      console.error('❌ Social login error:', error);
+      Alert.alert('Login Failed', `Failed to login with ${provider}. Please try again.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -78,6 +130,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
                   onPress={handleEmailContinue}
                   variant="primary"
                   style={styles.continueButton}
+                  loading={isLoading}
                 />
               )}
             </View>
@@ -95,6 +148,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
                 style={[styles.socialButton, styles.facebookButton]}
                 onPress={() => handleSocialLogin('facebook')}
                 activeOpacity={0.8}
+                disabled={isLoading}
               >
                 <Icon name="facebook" type="FontAwesome" size={20} color="#fff" />
                 <Text style={[styles.socialButtonText, styles.facebookText]}>
@@ -106,6 +160,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
                 style={[styles.socialButton, styles.googleButton]}
                 onPress={() => handleSocialLogin('google')}
                 activeOpacity={0.8}
+                disabled={isLoading}
               >
                 <Icon name="google" type="FontAwesome" size={20} color={Colors.textPrimary} />
                 <Text style={[styles.socialButtonText, styles.googleText]}>
@@ -117,6 +172,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
                 style={[styles.socialButton, styles.appleButton]}
                 onPress={() => handleSocialLogin('apple')}
                 activeOpacity={0.8}
+                disabled={isLoading}
               >
                 <Icon name="apple" type="FontAwesome" size={20} color="#fff" />
                 <Text style={[styles.socialButtonText, styles.appleText]}>

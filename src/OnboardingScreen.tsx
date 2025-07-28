@@ -4,12 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Button, Text } from './ui';
 import { Colors } from './config/colors';
 import { Fonts } from './config/fonts';
+import { useAuth } from './contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
-
-interface OnboardingScreenProps {
-  onGetStarted?: () => void;
-}
 
 interface OnboardingSlide {
   id: number;
@@ -22,7 +20,9 @@ interface OnboardingSlide {
   showButton?: boolean;
 }
 
-const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => {
+const OnboardingScreen: React.FC = () => {
+  const { completeOnboarding } = useAuth();
+  const navigation = useNavigation<any>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const colorTransition = useRef(new Animated.Value(0)).current;
@@ -117,7 +117,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted }) => 
     if (currentSlide < slides.length - 1) {
       goToSlide(currentSlide + 1);
     } else {
-      onGetStarted?.();
+      completeOnboarding();
+      navigation.navigate('AuthSelection');
     }
   };
 

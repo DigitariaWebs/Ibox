@@ -53,8 +53,13 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
     console.log('🔍 DEBUG: Extracted startLocationCoords:', startLocationCoords);
     console.log('🔍 DEBUG: Extracted destination:', destination);
     
-    if (startLocationCoords) {
-      console.log('📍 Using real pickup location for driver search:', startLocationCoords);
+    // If valid pickup coordinates are provided, use them.
+    if (
+      startLocationCoords &&
+      typeof startLocationCoords.latitude === 'number' &&
+      typeof startLocationCoords.longitude === 'number'
+    ) {
+      console.log('📍 Using pickup coordinates for driver search:', startLocationCoords);
       return {
         latitude: startLocationCoords.latitude,
         longitude: startLocationCoords.longitude,
@@ -62,20 +67,15 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
         longitudeDelta: 0.01,
       };
     }
-    
-    // Try to use destination coordinates if pickup coordinates are missing
-    if (destination?.coordinate) {
-      console.log('📍 BACKUP: Using destination coordinates for driver search:', destination.coordinate);
-      return {
-        latitude: destination.coordinate.latitude,
-        longitude: destination.coordinate.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
-    }
-    
-    console.log('📍 WARNING: No real coordinates found, using default location (Quebec City)');
+
+    // If pickup coordinates are missing, fall back to a safe default rather than
+    // the destination. Spawning drivers at the destination leads to unrealistic
+    // behaviour where drivers appear far from the pickup point.
+    console.log(
+      '📍 WARNING: startLocationCoords missing or invalid – falling back to default location (Quebec City).'
+    );
     console.log('🔍 DEBUG: Full route.params structure:', JSON.stringify(route.params, null, 2));
+
     return {
       latitude: 46.8139, // Quebec City default
       longitude: -71.2082,
