@@ -31,7 +31,7 @@ const DriverFoundScreen: React.FC<DriverFoundScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { selectedDriver, service } = route.params;
+  const { selectedDriver, service, startLocation, startLocationCoords, destination } = route.params;
   const [etaMinutes, setEtaMinutes] = useState(10);
   const [etaSeconds, setEtaSeconds] = useState(0);
 
@@ -109,7 +109,15 @@ const DriverFoundScreen: React.FC<DriverFoundScreenProps> = ({
     // Navigate back to map with tracking enabled
     navigation.reset({
       index: 0,
-      routes: [{ name: 'HomeScreen', params: { trackingDriver: selectedDriver } }],
+      routes: [{ 
+        name: 'HomeScreen', 
+        params: { 
+          trackingDriver: selectedDriver,
+          pickupLocation: startLocation,
+          pickupLocationCoords: startLocationCoords,
+          destinationLocation: destination
+        } 
+      }],
     });
   };
 

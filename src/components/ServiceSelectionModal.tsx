@@ -29,6 +29,7 @@ interface ServiceSelectionModalProps {
   onClose: () => void;
   onSelectService: (serviceId: string) => void;
   onContinue?: (serviceId: string) => void;
+  onReset?: () => void;
   destination?: string;
 }
 
@@ -91,6 +92,7 @@ const ServiceSelectionModal: React.FC<ServiceSelectionModalProps> = ({
   onClose,
   onSelectService,
   onContinue,
+  onReset,
   destination,
 }) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -181,6 +183,16 @@ const ServiceSelectionModal: React.FC<ServiceSelectionModalProps> = ({
           <Text style={styles.headerTitle}>Select Service</Text>
           <View style={styles.placeholder} />
         </View>
+
+        {/* Reset Locations Button */}
+        {onReset && (
+          <View style={styles.resetContainer}>
+            <TouchableOpacity style={styles.resetButton} onPress={onReset}>
+              <Ionicons name="refresh" size={16} color={Colors.primary} />
+              <Text style={styles.resetText}>Reset Locations</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Destination Info */}
         {destination && (
@@ -386,6 +398,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     marginLeft: 4,
+  },
+  resetContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary + '20',
+    gap: 6,
+  },
+  resetText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.primary,
   },
 });
 

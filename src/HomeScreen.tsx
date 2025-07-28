@@ -66,6 +66,7 @@ const HomeScreen: React.FC = () => {
   const [selectedDestination, setSelectedDestination] = useState<MapMarker | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<{latitude: number; longitude: number}[]>([]);
   const [startLocation, setStartLocation] = useState<string>('');
+  const [startLocationCoords, setStartLocationCoords] = useState<{latitude: number; longitude: number} | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [showBackButton, setShowBackButton] = useState(false);
   
@@ -75,6 +76,7 @@ const HomeScreen: React.FC = () => {
   const [trackingActive, setTrackingActive] = useState(false);
   const [estimatedArrival, setEstimatedArrival] = useState<number>(0); // in minutes
   const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [trackingDestination, setTrackingDestination] = useState<{latitude: number; longitude: number} | null>(null);
 
   const GOOGLE_API_KEY = 'AIzaSyAzPxqQ9QhUq_cmXkkcE-6DcgJn-EDngzI';
 
@@ -87,7 +89,23 @@ const HomeScreen: React.FC = () => {
     const params = route.params as any;
     if (params?.trackingDriver && !trackingActive) {
       console.log('🚗 Starting driver tracking:', params.trackingDriver);
-      initializeDriverTracking(params.trackingDriver);
+      console.log('📍 Pickup location:', params.pickupLocation);
+      console.log('📍 Pickup coordinates:', params.pickupLocationCoords);
+      console.log('📍 Destination location:', params.destinationLocation);
+      
+      // Update local state with passed coordinates if available
+      if (params.pickupLocationCoords) {
+        setStartLocationCoords(params.pickupLocationCoords);
+      }
+      if (params.pickupLocation) {
+        setStartLocation(params.pickupLocation);
+      }
+      
+      initializeDriverTracking(
+        params.trackingDriver, 
+        params.pickupLocation, 
+        params.destinationLocation
+      );
     }
   }, [route.params]);
 
@@ -321,10 +339,20 @@ const HomeScreen: React.FC = () => {
         });
         
         if (isStartLocation) {
-          // Handle start location selection
+          // Handle start location selection - store both name and coordinates
           setStartLocation(placeName);
+          setStartLocationCoords({
+            latitude: location.lat,
+            longitude: location.lng,
+          });
           setSuggestions([]);
           setSearchQuery('');
+          console.log('✅ Start location coordinates stored:', {
+            latitude: location.lat,
+            longitude: location.lng,
+            name: placeName,
+          });
+          console.log('🔍 DEBUG: startLocationCoords state updated');
         } else {
           // Handle destination selection
           const newLocation = {
@@ -350,9 +378,13 @@ const HomeScreen: React.FC = () => {
           setSelectedDestination(destinationMarker);
           setMarkers([destinationMarker]);
           
-          // Get directions from current location to destination
+          // Get directions from start location to destination
+          const startCoords = startLocationCoords || {
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude
+          };
           getDirections(
-            { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+            startCoords,
             { latitude: location.lat, longitude: location.lng }
           );
           
@@ -436,12 +468,12 @@ const HomeScreen: React.FC = () => {
             </Marker>
           )}
 
-          {/* Route line from driver to user when tracking */}
-          {trackingActive && driverLocation && (
+          {/* Route line from driver to destination when tracking */}
+          {trackingActive && driverLocation && trackingDestination && (
             <Polyline
               coordinates={[
                 driverLocation,
-                { latitude: currentLocation.latitude, longitude: currentLocation.longitude }
+                trackingDestination
               ]}
               strokeColor={Colors.success}
               strokeWidth={3}
@@ -490,12 +522,15 @@ const HomeScreen: React.FC = () => {
 
   const handleServiceContinue = () => {
     console.log('🚀 Service confirmed:', selectedService);
+    console.log('🔍 DEBUG: Navigating with startLocationCoords:', startLocationCoords);
+    console.log('🔍 DEBUG: Navigating with destination:', selectedDestination);
     setShowBackButton(false);
     
     // Navigate to package photo screen to start booking flow
     navigation.navigate('PackagePhoto', {
       service: selectedService,
       startLocation,
+      startLocationCoords,
       destination: selectedDestination,
     });
   };
@@ -504,51 +539,147 @@ const HomeScreen: React.FC = () => {
     if (showServiceSelection) {
       setShowServiceSelection(false);
       setShowBackButton(false);
-      setSelectedDestination(null);
-      setMarkers([]);
-      setRouteCoordinates([]);
+      // Open search modal to let user change locations
+      setModalVisible(true);
     }
   };
 
   // Driver tracking functions
-  const initializeDriverTracking = (driver: any) => {
+  const initializeDriverTracking = (driver: any, pickupLocation?: string, destinationLocation?: any) => {
     setTrackingDriver(driver);
     setTrackingActive(true);
     
-    // Set initial driver location (randomly positioned 2-5km away)
+    // Get coordinates for pickup and destination
+    const pickupCoords = getPickupCoordinates(pickupLocation);
+    const destinationCoords = getDestinationCoordinates(destinationLocation);
+    
+    console.log('📍 Using pickup coords:', pickupCoords);
+    console.log('📍 Using destination coords:', destinationCoords);
+    
+    // Validate coordinates before proceeding
+    if (!pickupCoords.latitude || !pickupCoords.longitude) {
+      console.error('❌ Invalid pickup coordinates:', pickupCoords);
+      Alert.alert('Error', 'Invalid pickup location coordinates. Cannot start tracking.');
+      return;
+    }
+    
+    if (!destinationCoords.latitude || !destinationCoords.longitude) {
+      console.error('❌ Invalid destination coordinates:', destinationCoords);
+      Alert.alert('Error', 'Invalid destination coordinates. Cannot start tracking.');
+      return;
+    }
+    
+    // Set initial driver location (randomly positioned 2-5km away from pickup)
     const distance = 0.02 + Math.random() * 0.03; // 2-5km in degrees
     const angle = Math.random() * 2 * Math.PI;
     const initialDriverLocation = {
-      latitude: currentLocation.latitude + Math.cos(angle) * distance,
-      longitude: currentLocation.longitude + Math.sin(angle) * distance,
+      latitude: pickupCoords.latitude + Math.cos(angle) * distance,
+      longitude: pickupCoords.longitude + Math.sin(angle) * distance,
     };
     setDriverLocation(initialDriverLocation);
     
-    // Set initial ETA (8-15 minutes)
-    const initialETA = 8 + Math.random() * 7;
+    // Calculate realistic ETA based on distance from driver to pickup location
+    const driverToPickupDistance = calculateDistance(initialDriverLocation, pickupCoords);
+    const initialETA = Math.max(5, Math.min(25, driverToPickupDistance * 2 + Math.random() * 5)); // 2 min per km + randomness
     setEstimatedArrival(Math.round(initialETA));
     
-    // Start simulation
-    startDriverMovementSimulation(initialDriverLocation, initialETA);
+    console.log(`🚗 Driver initialized: ${driverToPickupDistance.toFixed(1)}km away from pickup, ${Math.round(initialETA)}min ETA`);
+    
+    // Store pickup location as target for driver movement
+    setTrackingDestination(pickupCoords);
+    
+    // Update map region to center on pickup location if it's not Quebec default
+    if (pickupCoords.latitude !== 46.8139 || pickupCoords.longitude !== -71.2082) {
+      console.log('📍 Updating map region to pickup location:', pickupCoords);
+      setCurrentLocation({
+        latitude: pickupCoords.latitude,
+        longitude: pickupCoords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    }
+    
+    // Start simulation - driver moves toward pickup location
+    startDriverMovementSimulation(initialDriverLocation, initialETA, pickupCoords);
   };
 
-  const startDriverMovementSimulation = (initialLocation: {latitude: number; longitude: number}, initialETA: number) => {
+  const getPickupCoordinates = (pickupLocation?: string) => {
+    console.log('🔍 DEBUG: getPickupCoordinates called with:', pickupLocation);
+    console.log('🔍 DEBUG: startLocationCoords state:', startLocationCoords);
+    console.log('🔍 DEBUG: currentLocation state:', currentLocation);
+    
+    // Use stored start location coordinates if available
+    if (startLocationCoords && startLocationCoords.latitude && startLocationCoords.longitude) {
+      console.log('📍 Using stored start location coordinates:', startLocationCoords);
+      return startLocationCoords;
+    }
+    
+    // Check if currentLocation has been updated from Quebec default (GPS obtained)
+    if (currentLocation.latitude !== 46.8139 && currentLocation.longitude !== -71.2082) {
+      console.log('📍 Using GPS current location (not Quebec default):', currentLocation);
+      return {
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude
+      };
+    }
+    
+    // If currentLocation is still Quebec, check if location permission was granted
+    if (locationPermissionGranted) {
+      console.log('📍 Location permission granted but still on Quebec, force using current coordinates');
+      return {
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude
+      };
+    }
+    
+    // Last resort: use Quebec coordinates but warn about it
+    console.log('📍 WARNING: Using Quebec fallback coordinates - location permission may be denied');
+    return {
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude
+    };
+  };
+
+  const getDestinationCoordinates = (destinationLocation?: any) => {
+    // Use the real destination coordinates from the booking
+    if (destinationLocation?.coordinate) {
+      return destinationLocation.coordinate;
+    }
+    // Fallback to current location if no destination available
+    return {
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude
+    };
+  };
+
+  const calculateDistance = (coord1: {latitude: number; longitude: number}, coord2: {latitude: number; longitude: number}) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (coord2.latitude - coord1.latitude) * Math.PI / 180;
+    const dLon = (coord2.longitude - coord1.longitude) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(coord1.latitude * Math.PI / 180) * Math.cos(coord2.latitude * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in km
+  };
+
+  const startDriverMovementSimulation = (initialLocation: {latitude: number; longitude: number}, initialETA: number, targetCoords: {latitude: number; longitude: number}) => {
     let currentDriverPos = { ...initialLocation };
     let currentETA = initialETA;
     
     const interval = setInterval(() => {
-      // Calculate movement towards user location
-      const userLat = currentLocation.latitude;
-      const userLng = currentLocation.longitude;
+      // Calculate movement towards target location (pickup)
+      const targetLat = targetCoords.latitude;
+      const targetLng = targetCoords.longitude;
       
-      // Move driver closer to user (simulate 30-50 km/h speed)
+      // Move driver closer to target (simulate 30-50 km/h speed)
       const stepSize = 0.0008 + Math.random() * 0.0004; // Varies speed slightly
-      const deltaLat = userLat - currentDriverPos.latitude;
-      const deltaLng = userLng - currentDriverPos.longitude;
+      const deltaLat = targetLat - currentDriverPos.latitude;
+      const deltaLng = targetLng - currentDriverPos.longitude;
       const distance = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
       
-      if (distance > 0.001) { // Still moving towards destination
-        // Move towards user with some randomness for realistic movement
+      if (distance > 0.001) { // Still moving towards target
+        // Move towards target with some randomness for realistic movement
         const progress = stepSize / distance;
         currentDriverPos = {
           latitude: currentDriverPos.latitude + deltaLat * progress + (Math.random() - 0.5) * 0.0001,
@@ -563,8 +694,8 @@ const HomeScreen: React.FC = () => {
         
         console.log(`🚗 Driver moving: ETA ${Math.round(currentETA)}min, Distance: ${distance.toFixed(4)}`);
       } else {
-        // Driver arrived
-        console.log('🎉 Driver arrived!');
+        // Driver arrived at pickup location
+        console.log('🎉 Driver arrived at pickup location!');
         setEstimatedArrival(0);
         clearInterval(interval);
         setTrackingInterval(null);
@@ -572,7 +703,7 @@ const HomeScreen: React.FC = () => {
         // Show arrival notification
         Alert.alert(
           '🎉 Driver Arrived!',
-          `${trackingDriver?.name} has reached your location.`,
+          `${trackingDriver?.name} has reached the pickup location.`,
           [
             { text: 'OK', onPress: () => stopDriverTracking() }
           ]
@@ -591,12 +722,27 @@ const HomeScreen: React.FC = () => {
     setTrackingActive(false);
     setTrackingDriver(null);
     setDriverLocation(null);
+    setTrackingDestination(null);
     setEstimatedArrival(0);
     console.log('🛑 Driver tracking stopped');
   };
 
   const handleChangeStartLocation = () => {
     console.log('🚀 Changing start location');
+  };
+
+  const handleResetLocations = () => {
+    console.log('🔄 Resetting locations');
+    // Clear all location data
+    setStartLocation('');
+    setStartLocationCoords(null);
+    setSelectedDestination(null);
+    setMarkers([]);
+    setRouteCoordinates([]);
+    setShowServiceSelection(false);
+    setShowBackButton(false);
+    // Open search modal to select new locations
+    setModalVisible(true);
   };
 
   // Service helper functions
@@ -764,6 +910,7 @@ const HomeScreen: React.FC = () => {
           setShowBackButton(false);
         }}
         onSelectService={handleServiceSelect}
+        onReset={handleResetLocations}
         destination={selectedDestination?.title}
       />
 

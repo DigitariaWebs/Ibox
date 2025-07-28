@@ -47,12 +47,44 @@ const DriverSearchScreen: React.FC<DriverSearchScreenProps> = ({
   const [searchText, setSearchText] = useState('Searching for drivers...');
 
   // Get pickup location from route params or use default
-  const pickupLocation = {
-    latitude: 46.8139, // Quebec City default
-    longitude: -71.2082,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
+  const getPickupLocation = () => {
+    console.log('🔍 DEBUG: DriverSearchScreen route.params:', route.params);
+    const { startLocationCoords, destination } = route.params || {};
+    console.log('🔍 DEBUG: Extracted startLocationCoords:', startLocationCoords);
+    console.log('🔍 DEBUG: Extracted destination:', destination);
+    
+    if (startLocationCoords) {
+      console.log('📍 Using real pickup location for driver search:', startLocationCoords);
+      return {
+        latitude: startLocationCoords.latitude,
+        longitude: startLocationCoords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+    }
+    
+    // Try to use destination coordinates if pickup coordinates are missing
+    if (destination?.coordinate) {
+      console.log('📍 BACKUP: Using destination coordinates for driver search:', destination.coordinate);
+      return {
+        latitude: destination.coordinate.latitude,
+        longitude: destination.coordinate.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+    }
+    
+    console.log('📍 WARNING: No real coordinates found, using default location (Quebec City)');
+    console.log('🔍 DEBUG: Full route.params structure:', JSON.stringify(route.params, null, 2));
+    return {
+      latitude: 46.8139, // Quebec City default
+      longitude: -71.2082,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
   };
+
+  const pickupLocation = getPickupLocation();
 
   // Animation values
   const radarScale1 = useSharedValue(0);
