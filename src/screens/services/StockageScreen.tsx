@@ -248,10 +248,15 @@ const StockageScreen: React.FC<StockageScreenProps> = ({ navigation }) => {
   ];
 
   const handleBooking = () => {
-    navigation.navigate('BookingFlow', { 
-      service: 'stockage',
-      selectedUnit,
-      selectedOption 
+    console.log('🏢 StockageScreen: Navigating to facility map with selections:', {
+      selectedUnit: storageUnits.find(unit => unit.id === selectedUnit),
+      selectedOption: storageOptions.find(option => option.id === selectedOption)
+    });
+    
+    navigation.navigate('StorageFacilityMap', { 
+      service: 'storage',
+      selectedUnit: storageUnits.find(unit => unit.id === selectedUnit),
+      selectedOption: storageOptions.find(option => option.id === selectedOption)
     });
   };
 

@@ -184,29 +184,53 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
         setCurrentStep(currentStep + 1);
       }, 200);
     } else {
-      // Navigate to order summary
+      // Navigate to facility map for storage selection
       setTimeout(() => {
-        console.log('🏪 StorageFlow: Navigating to StorageOrderSummary');
+        console.log('🏪 StorageFlow: Navigating to StorageFacilityMap');
         const selectedUnitData = storageUnits.find(unit => unit.id === selectedUnit);
         const selectedDurationData = storageDurations.find(duration => duration.id === selectedDuration);
         const selectedPickupData = pickupServices.find(pickup => pickup.id === selectedPickup);
         
-        console.log('🏪 StorageFlow: Order data prepared:', {
+        console.log('🏪 StorageFlow: Storage preferences prepared:', {
           unit: selectedUnitData?.title,
           duration: selectedDurationData?.title,
           climateControl: needsClimateControl,
           needsPickup: selectedPickupData?.id === 'pickup'
         });
         
-        navigation.navigate('StorageOrderSummary', {
-          ...route.params,
-          selectedUnit: selectedUnitData,
-          selectedDuration: selectedDurationData,
-          selectedAccess: accessFrequency,
-          climateControl: needsClimateControl,
+        // Create unified unit object compatible with StockageScreen format
+        const unifiedUnit = {
+          id: selectedUnitData?.id || 'medium',
+          name: selectedUnitData?.title || 'Medium Unit',
+          price: selectedUnitData?.monthlyPrice?.replace('$', '').replace('/mo', '') || '75',
+          description: selectedUnitData?.description || 'Storage unit',
+          size: selectedUnitData?.dimensions || '100 sq ft',
+          dimensions: selectedUnitData?.size || '10x10 ft',
+          features: [
+            'Secure Access',
+            '24/7 Surveillance',
+            ...(needsClimateControl ? ['Climate Controlled'] : []),
+            ...(accessFrequency === 'frequent' ? ['Frequent Access'] : []),
+          ],
+        };
+
+        // Create unified option object
+        const unifiedOption = {
+          id: selectedDurationData?.id || 'medium',
+          type: selectedDurationData?.title || 'Medium Term',
+          duration: selectedDurationData?.period || '3-12 months',
+          description: selectedDurationData?.description || 'Best value option',
           needsPickup: selectedPickupData?.id === 'pickup',
-          specialRequirements: specialInstructions,
-          serviceType: 'storage',
+          specialInstructions,
+          climateControl: needsClimateControl,
+          accessFrequency,
+        };
+        
+        navigation.navigate('StorageFacilityMap', {
+          service: 'storage',
+          selectedUnit: unifiedUnit,
+          selectedOption: unifiedOption,
+          originalParams: route.params, // Keep original location data
         });
       }, 200);
     }

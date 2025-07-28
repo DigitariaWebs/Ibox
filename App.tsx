@@ -63,6 +63,11 @@ import StorageOrderSummary from './src/screens/flows/StorageOrderSummary';
 import ExpressOrderSummary from './src/screens/flows/ExpressOrderSummary';
 import StandardOrderSummary from './src/screens/flows/StandardOrderSummary';
 
+// Storage Service Screens
+import StorageFacilityMapScreen from './src/screens/flows/StorageFacilityMapScreen';
+import StorageFacilityDetailsScreen from './src/screens/flows/StorageFacilityDetailsScreen';
+import StorageSubscriptionSuccessScreen from './src/screens/flows/StorageSubscriptionSuccessScreen';
+
 // Auth Context
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import AuthLoadingScreen from './src/screens/AuthLoadingScreen';
@@ -322,6 +327,35 @@ const MainNavigator: React.FC = () => {
         <Stack.Screen 
           name="StandardOrderSummary" 
           component={StandardOrderSummary}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        
+        {/* Storage Service Flow Screens */}
+        <Stack.Screen 
+          name="StorageFacilityMap" 
+          component={StorageFacilityMapScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="StorageFacilityDetails" 
+          component={StorageFacilityDetailsScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="StorageSubscriptionSuccess" 
+          component={StorageSubscriptionSuccessScreen}
           options={{
             presentation: 'card',
             animation: 'slide_from_right',
