@@ -35,78 +35,49 @@ const services: ServiceItem[] = [
   {
     id: 'express',
     title: 'Express Delivery',
-    description: 'Fast same-day delivery for urgent packages',
+    description: 'Fast same-day delivery for urgent packages and time-sensitive deliveries',
     icon: 'flash',
-    iconFamily: 'Ionicons',
-    color: '#FF6B6B',
+    iconFamily: 'MaterialIcons',
+    color: '#FF6B35',
     price: 'From $15',
-    features: ['Same-day delivery', 'Real-time tracking', 'Priority handling'],
+    features: ['Same-day delivery', 'Real-time tracking', 'Priority handling', 'Instant notifications'],
     screen: 'ExpressScreen',
   },
   {
     id: 'standard',
     title: 'Standard Delivery',
-    description: 'Reliable delivery for everyday packages',
-    icon: 'cube-outline',
-    iconFamily: 'Ionicons',
+    description: 'Reliable next-day delivery for regular packages and documents',
+    icon: 'local-shipping',
+    iconFamily: 'MaterialIcons',
     color: '#4ECDC4',
     price: 'From $8',
-    features: ['Next-day delivery', 'Package insurance', 'Flexible pickup'],
+    features: ['Next-day delivery', 'Package insurance', 'Flexible scheduling', 'SMS updates'],
   },
   {
     id: 'moving',
     title: 'Moving Service',
-    description: 'Professional moving assistance for furniture and large items',
-    icon: 'local-shipping',
+    description: 'Complete moving assistance with professional movers and equipment',
+    icon: 'home',
     iconFamily: 'MaterialIcons',
     color: '#45B7D1',
     price: 'From $50',
-    features: ['Professional movers', 'Furniture protection', 'Assembly service'],
+    features: ['Professional movers', 'Packing service', 'Furniture protection', 'Assembly help'],
     screen: 'DemenagementScreen',
   },
   {
     id: 'storage',
     title: 'Storage Service',
-    description: 'Secure storage solutions for your belongings',
-    icon: 'archive',
-    iconFamily: 'Ionicons',
+    description: 'Secure climate-controlled storage solutions for all your belongings',
+    icon: 'storage',
+    iconFamily: 'MaterialIcons',
     color: '#96CEB4',
     price: 'From $25/month',
-    features: ['Climate controlled', '24/7 security', 'Easy access'],
+    features: ['Climate controlled', '24/7 security', 'Flexible access', 'Monthly billing'],
     screen: 'StockageScreen',
-  },
-  {
-    id: 'colis',
-    title: 'Package Delivery',
-    description: 'Simple package delivery for documents and small items',
-    icon: 'mail',
-    iconFamily: 'Ionicons',
-    color: '#F7B731',
-    price: 'From $5',
-    features: ['Document delivery', 'Small packages', 'Quick pickup'],
-    screen: 'ColisScreen',
-  },
-  {
-    id: 'international',
-    title: 'International Shipping',
-    description: 'Global shipping solutions for worldwide delivery',
-    icon: 'airplane',
-    iconFamily: 'Ionicons',
-    color: '#A55EEA',
-    price: 'Quote required',
-    features: ['Worldwide shipping', 'Customs handling', 'Express options'],
   },
 ];
 
 const ServicesScreen: React.FC<ServicesScreenProps> = ({ navigation }) => {
-  const handleServicePress = (service: ServiceItem) => {
-    if (service.screen) {
-      navigation.navigate(service.screen);
-    } else {
-      // Navigate to HomeScreen and let user select this service
-      navigation.navigate('HomeScreen', { selectedService: service.id });
-    }
-  };
 
   const renderServiceIcon = (service: ServiceItem) => {
     const IconComponent = service.iconFamily === 'Ionicons' ? Ionicons : MaterialIcons;
@@ -120,11 +91,7 @@ const ServicesScreen: React.FC<ServicesScreenProps> = ({ navigation }) => {
   };
 
   const ServiceCard = ({ service }: { service: ServiceItem }) => (
-    <TouchableOpacity
-      style={styles.serviceCard}
-      onPress={() => handleServicePress(service)}
-      activeOpacity={0.8}
-    >
+    <View style={styles.serviceCard}>
       <View style={[styles.serviceIconContainer, { backgroundColor: service.color }]}>
         {renderServiceIcon(service)}
       </View>
@@ -138,22 +105,15 @@ const ServicesScreen: React.FC<ServicesScreenProps> = ({ navigation }) => {
         </View>
         
         <View style={styles.featuresContainer}>
-          {service.features.slice(0, 2).map((feature, index) => (
+          {service.features.map((feature, index) => (
             <View key={index} style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
+              <View style={styles.featureBullet} />
               <Text style={styles.featureText}>{feature}</Text>
             </View>
           ))}
-          {service.features.length > 2 && (
-            <Text style={styles.moreFeatures}>+{service.features.length - 2} more</Text>
-          )}
         </View>
       </View>
-      
-      <View style={styles.arrowContainer}>
-        <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -173,15 +133,15 @@ const ServicesScreen: React.FC<ServicesScreenProps> = ({ navigation }) => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>Delivery Solutions for Every Need</Text>
+          <Text style={styles.heroTitle}>Our Service Portfolio</Text>
           <Text style={styles.heroSubtitle}>
-            From express packages to full moving services, we've got you covered
+            Discover our comprehensive range of delivery and logistics solutions
           </Text>
         </View>
 
         {/* Services Grid */}
         <View style={styles.servicesContainer}>
-          <Text style={styles.sectionTitle}>Available Services</Text>
+          <Text style={styles.sectionTitle}>Our Services</Text>
           
           <View style={styles.servicesGrid}>
             {services.map((service) => (
@@ -313,68 +273,83 @@ const styles = StyleSheet.create({
   },
   serviceCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   serviceIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginBottom: 16,
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   serviceContent: {
     flex: 1,
+    alignItems: 'center',
   },
   serviceTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   serviceDescription: {
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
+    lineHeight: 22,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   servicePriceContainer: {
-    marginBottom: 12,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: Colors.primary + '10',
+    borderRadius: 12,
   },
   servicePrice: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.primary,
+    textAlign: 'center',
   },
   featuresContainer: {
-    gap: 4,
+    gap: 8,
+    width: '100%',
+    paddingHorizontal: 8,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
+  },
+  featureBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
   },
   featureText: {
-    fontSize: 12,
+    fontSize: 14,
     color: Colors.textSecondary,
-  },
-  moreFeatures: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    fontStyle: 'italic',
-  },
-  arrowContainer: {
-    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
   },
   infoSection: {
     paddingHorizontal: 20,

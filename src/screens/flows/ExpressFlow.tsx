@@ -1,25 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   StatusBar,
   Alert,
   TextInput,
   Dimensions,
+  SafeAreaView,
+  Animated,
 } from 'react-native';
-import Animated, {
-  FadeIn,
-  SlideInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '../../config/colors';
 import { Text, Button } from '../../ui';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 // Safe window dimensions
 const windowDims = Dimensions.get('window');
@@ -31,58 +24,87 @@ interface ExpressFlowProps {
 }
 
 const ExpressFlow: React.FC<ExpressFlowProps> = ({ navigation, route }) => {
-  console.log('⚡ ExpressFlow: Component mounted');
-  
+  const [currentStep, setCurrentStep] = useState<number>(1);
   const [selectedUrgency, setSelectedUrgency] = useState<string>('');
   const [selectedInstructions, setSelectedInstructions] = useState<string[]>([]);
   const [specialNotes, setSpecialNotes] = useState<string>('');
 
-  const buttonScale = useSharedValue(1);
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
-  console.log('⚡ ExpressFlow: Initial state set');
+  const animateStepTransition = () => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const steps = [
+    { number: 1, title: 'Urgence', active: currentStep === 1 },
+    { number: 2, title: 'Instructions', active: currentStep === 2 },
+  ];
 
   const urgencyOptions = [
     {
       id: '1h',
-      title: 'Within 1 Hour',
-      subtitle: 'Emergency delivery',
+      title: 'Express 1h',
+      subtitle: 'Livraison en moins d\'1h',
       price: '+$25',
       icon: 'bolt',
-      color: Colors.error,
+      duration: '30-60min',
     },
     {
       id: '2h',
-      title: 'Within 2 Hours',
-      subtitle: 'Fast delivery',
+      title: 'Express 2h',
+      subtitle: 'Livraison ultra-rapide',
       price: '+$15',
-      icon: 'schedule',
-      color: Colors.warning,
+      icon: 'flash-on',
+      duration: '1-2h',
     },
     {
       id: 'same-day',
-      title: 'Same Day',
-      subtitle: 'Standard express',
-      price: 'No extra cost',
-      icon: 'today',
-      color: Colors.primary,
+      title: 'Même jour',
+      subtitle: 'Livraison dans les 4 heures',
+      price: 'Pas de frais supplémentaires',
+      icon: 'schedule',
+      duration: '2-4h',
+      popular: true,
     },
   ];
 
   const instructionOptions = [
-    { id: 'fragile', title: 'Fragile', icon: 'warning-outline' },
-    { id: 'upright', title: 'Keep upright', icon: 'arrow-up-outline' },
-    { id: 'signature', title: 'Signature required', icon: 'create-outline' },
-    { id: 'photo', title: 'Photo confirmation', icon: 'camera-outline' },
-    { id: 'call', title: 'Call on arrival', icon: 'call-outline' },
+    { id: 'fragile', title: 'Fragile', icon: 'warning' },
+    { id: 'signature', title: 'Signature requise', icon: 'edit' },
+    { id: 'photo', title: 'Photo confirmation', icon: 'camera-alt' },
+    { id: 'call', title: 'Appeler avant', icon: 'phone' },
+    { id: 'cold', title: 'Réfrigéré', icon: 'ac-unit' },
+    { id: 'priority', title: 'Priorité', icon: 'priority-high' },
   ];
 
   const handleUrgencySelect = (urgencyId: string) => {
-    console.log('⚡ ExpressFlow: Urgency selected:', urgencyId);
     setSelectedUrgency(urgencyId);
+    setTimeout(() => {
+      setCurrentStep(2);
+      animateStepTransition();
+    }, 300);
   };
 
   const toggleInstruction = (instructionId: string) => {
-    console.log('⚡ ExpressFlow: Toggling instruction:', instructionId);
     setSelectedInstructions(prev => 
       prev.includes(instructionId)
         ? prev.filter(id => id !== instructionId)
@@ -90,263 +112,194 @@ const ExpressFlow: React.FC<ExpressFlowProps> = ({ navigation, route }) => {
     );
   };
 
-  const handleContinue = () => {
-    console.log('⚡ ExpressFlow: Continue button pressed');
-    console.log('⚡ ExpressFlow: Selected urgency:', selectedUrgency);
-    console.log('⚡ ExpressFlow: Selected instructions:', selectedInstructions);
-    
+  const handleTakePhoto = () => {
     if (!selectedUrgency) {
-      console.log('⚡ ExpressFlow: ERROR - No urgency selected');
-      Alert.alert('Selection Required', 'Please select delivery urgency.');
+      Alert.alert('Sélection requise', 'Veuillez sélectionner l\'urgence de livraison.');
       return;
     }
 
-    console.log('⚡ ExpressFlow: Validation passed, proceeding to package photo');
-    buttonScale.value = withSpring(0.95, { duration: 100 }, () => {
-      buttonScale.value = withSpring(1, { duration: 200 });
+    const selectedUrgencyData = urgencyOptions.find(opt => opt.id === selectedUrgency);
+    
+    navigation.navigate('PackagePhoto', {
+      ...route.params,
+      urgency: selectedUrgencyData,
+      specialInstructions: selectedInstructions,
+      specialNotes,
+      serviceType: 'express',
+      nextScreen: 'ExpressOrderSummary',
     });
-
-    setTimeout(() => {
-      console.log('⚡ ExpressFlow: Navigating to PackagePhoto');
-      const selectedUrgencyData = urgencyOptions.find(opt => opt.id === selectedUrgency);
-      
-      console.log('⚡ ExpressFlow: Order data prepared:', {
-        urgency: selectedUrgencyData?.title,
-        instructionCount: selectedInstructions.length
-      });
-      
-      navigation.navigate('PackagePhoto', {
-        ...route.params,
-        urgency: selectedUrgencyData,
-        specialInstructions: selectedInstructions,
-        specialNotes,
-        serviceType: 'express',
-        nextScreen: 'ExpressOrderSummary',
-      });
-    }, 200);
   };
 
-  const buttonAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: buttonScale.value }],
-    };
-  });
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      animateStepTransition();
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const ProgressIndicator = () => (
+    <View style={styles.progressContainer}>
+      {steps.map((step, index) => (
+        <View key={step.number} style={styles.progressStep}>
+          <View style={[
+            styles.progressDot,
+            step.active && styles.progressDotActive,
+            currentStep > step.number && styles.progressDotCompleted,
+          ]}>
+            {currentStep > step.number ? (
+              <MaterialIcons name="check" size={12} color={Colors.white} />
+            ) : (
+              <Text style={[
+                styles.progressNumber,
+                step.active && styles.progressNumberActive,
+              ]}>{step.number}</Text>
+            )}
+          </View>
+          {index < steps.length - 1 && (
+            <View style={[
+              styles.progressLine,
+              currentStep > step.number && styles.progressLineCompleted,
+            ]} />
+          )}
+        </View>
+      ))}
+    </View>
+  );
+
+  const UrgencyStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>Quelle est l'urgence ?</Text>
+        <Text style={styles.stepSubtitle}>Sélectionnez le délai qui vous convient</Text>
+      </View>
+      
+      <View style={styles.stepContent}>
+        <View style={styles.optionsGrid}>
+          {urgencyOptions.map((option) => (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.optionCard,
+                selectedUrgency === option.id && styles.optionCardSelected,
+                option.popular && styles.optionCardPopular,
+              ]}
+              onPress={() => handleUrgencySelect(option.id)}
+              activeOpacity={0.7}
+            >
+              {option.popular && (
+                <View style={styles.popularBadge}>
+                  <Text style={styles.popularText}>POPULAIRE</Text>
+                </View>
+              )}
+              
+              <View style={styles.optionIcon}>
+                <MaterialIcons name={option.icon} size={28} color={Colors.primary} />
+              </View>
+              
+              <Text style={styles.optionName}>{option.title}</Text>
+              <Text style={styles.optionDuration}>{option.duration}</Text>
+              <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+              
+              <View style={styles.optionPriceContainer}>
+                <Text style={styles.optionPrice}>{option.price}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+
+  const InstructionsStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>Instructions spéciales</Text>
+        <Text style={styles.stepSubtitle}>Sélectionnez les options qui vous conviennent</Text>
+      </View>
+      
+      <View style={styles.stepContent}>
+        <View style={styles.chipsContainer}>
+          {instructionOptions.map((chip) => (
+            <TouchableOpacity
+              key={chip.id}
+              style={[
+                styles.chip,
+                selectedInstructions.includes(chip.id) && styles.chipSelected,
+              ]}
+              onPress={() => toggleInstruction(chip.id)}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons 
+                name={chip.icon} 
+                size={16} 
+                color={selectedInstructions.includes(chip.id) ? Colors.white : Colors.primary} 
+              />
+              <Text style={[
+                styles.chipText,
+                selectedInstructions.includes(chip.id) && styles.chipTextSelected,
+              ]}>{chip.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
+        <TextInput
+          style={styles.textInput}
+          placeholder="Ajoutez des instructions particulières..."
+          placeholderTextColor={Colors.textTertiary}
+          value={specialNotes}
+          onChangeText={setSpecialNotes}
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+          maxLength={200}
+        />
+      </View>
+      
+      <View style={styles.stepFooter}>
+        <Button
+          title="Prendre une photo du colis"
+          onPress={handleTakePhoto}
+          style={styles.continueButton}
+        />
+      </View>
+    </View>
+  );
+
 
   return (
     <View style={styles.container}>
-      {console.log('⚡ ExpressFlow: Rendering main container')}
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       
-      {/* Header */}
+      {/* Custom Header with Back Button */}
       <View style={styles.header}>
-        {console.log('⚡ ExpressFlow: Rendering header')}
-        <TouchableOpacity style={styles.backButton} onPress={() => {
-          console.log('⚡ ExpressFlow: Back button pressed');
-          navigation.goBack();
-        }}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
+        
         <Text style={styles.headerTitle}>Express Delivery</Text>
-        <View style={styles.placeholder} />
+        
+        <View style={styles.stepIndicator}>
+          <Text style={styles.stepCounter}>{currentStep}/2</Text>
+        </View>
       </View>
 
-      <ScrollView 
-        style={styles.content} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+      {/* Progress Indicator */}
+      <ProgressIndicator />
+
+      {/* Step Content - Full Screen */}
+      <Animated.View 
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
       >
-        {console.log('⚡ ExpressFlow: Rendering ScrollView content')}
-        
-        {/* Header Section */}
-        <Animated.View style={styles.headerSection} entering={FadeIn}>
-          <Text style={styles.stepTitle}>Express Delivery</Text>
-          <Text style={styles.stepSubtitle}>
-            Configure your urgent delivery preferences. We'll take a photo of your package to calculate precise pricing.
-          </Text>
-        </Animated.View>
-
-        {/* Urgency Selection */}
-        <Animated.View style={styles.section} entering={SlideInUp.delay(200)}>
-          {console.log('⚡ ExpressFlow: Rendering urgency selection')}
-          <Text style={styles.sectionTitle}>⚡ How urgent is this delivery?</Text>
-          
-          <View style={styles.urgencyList}>
-            {urgencyOptions.map((option, index) => {
-              console.log('⚡ ExpressFlow: Rendering urgency option:', option.id);
-              return (
-                <Animated.View
-                  key={option.id}
-                  entering={SlideInUp.delay(300 + index * 100)}
-                >
-                  <TouchableOpacity
-                    style={[
-                      styles.urgencyCard,
-                      selectedUrgency === option.id && styles.selectedUrgencyCard,
-                    ]}
-                    onPress={() => handleUrgencySelect(option.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.urgencyCardContent}>
-                      <View style={[
-                        styles.urgencyIcon,
-                        { backgroundColor: option.color + '15' },
-                        selectedUrgency === option.id && { backgroundColor: option.color },
-                      ]}>
-                        <MaterialIcons 
-                          name={option.icon as any} 
-                          size={24} 
-                          color={selectedUrgency === option.id ? Colors.white : option.color} 
-                        />
-                      </View>
-                      
-                      <View style={styles.urgencyInfo}>
-                        <Text style={[
-                          styles.urgencyTitle,
-                          selectedUrgency === option.id && styles.selectedUrgencyTitle,
-                        ]}>
-                          {option.title}
-                        </Text>
-                        <Text style={styles.urgencySubtitle}>{option.subtitle}</Text>
-                      </View>
-                      
-                      <View style={styles.urgencyPriceContainer}>
-                        <Text style={[
-                          styles.urgencyPrice,
-                          selectedUrgency === option.id && { color: option.color }
-                        ]}>
-                          {option.price}
-                        </Text>
-                        
-                        <View style={[
-                          styles.radioButton,
-                          selectedUrgency === option.id && styles.radioSelected,
-                          { borderColor: option.color }
-                        ]}>
-                          {selectedUrgency === option.id && (
-                            <View style={[styles.radioInner, { backgroundColor: option.color }]} />
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
-          </View>
-        </Animated.View>
-
-        {/* Special Instructions */}
-        <Animated.View style={styles.section} entering={SlideInUp.delay(600)}>
-          {console.log('⚡ ExpressFlow: Rendering special instructions')}
-          <Text style={styles.sectionTitle}>📋 Special Instructions</Text>
-          <Text style={styles.sectionSubtitle}>
-            Select any special handling requirements for your package
-          </Text>
-          
-          <View style={styles.instructionsGrid}>
-            {instructionOptions.map((option, index) => {
-              console.log('⚡ ExpressFlow: Rendering instruction option:', option.id);
-              return (
-                <Animated.View 
-                  key={option.id}
-                  entering={SlideInUp.delay(700 + index * 50)}
-                  style={styles.instructionContainer}
-                >
-                  <TouchableOpacity 
-                    style={[
-                      styles.instructionChip,
-                      selectedInstructions.includes(option.id) && styles.selectedChip
-                    ]}
-                    onPress={() => {
-                      console.log('⚡ ExpressFlow: Instruction clicked:', option.id);
-                      toggleInstruction(option.id);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[
-                      styles.chipIcon,
-                      selectedInstructions.includes(option.id) && styles.selectedChipIcon
-                    ]}>
-                      <Ionicons 
-                        name={option.icon as any} 
-                        size={18} 
-                        color={selectedInstructions.includes(option.id) ? Colors.white : Colors.primary} 
-                      />
-                    </View>
-                    <Text style={[
-                      styles.chipText, 
-                      selectedInstructions.includes(option.id) && styles.selectedChipText
-                    ]}>
-                      {option.title}
-                    </Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
-          </View>
-
-          {/* Special Notes */}
-          <Animated.View entering={SlideInUp.delay(900)}>
-            <Text style={styles.notesLabel}>Additional Notes (Optional)</Text>
-            <TextInput
-              style={styles.notesInput}
-              value={specialNotes}
-              onChangeText={(text) => {
-                console.log('⚡ ExpressFlow: Special notes updated:', text.length, 'characters');
-                setSpecialNotes(text);
-              }}
-              placeholder="Any specific delivery instructions, access codes, or special requirements..."
-              placeholderTextColor={Colors.textSecondary}
-              multiline
-              numberOfLines={3}
-              maxLength={200}
-            />
-            <Text style={styles.characterCount}>
-              {specialNotes.length}/200 characters
-            </Text>
-          </Animated.View>
-        </Animated.View>
-      </ScrollView>
-
-      {/* Continue Button */}
-      {console.log('⚡ ExpressFlow: Rendering footer with continue button')}
-      <Animated.View style={styles.footer} entering={FadeIn.delay(1000)}>
-        <View style={styles.footerContent}>
-          {selectedUrgency && (
-            <View style={styles.selectionSummary}>
-              <Text style={styles.summaryText}>
-                Selected: {urgencyOptions.find(opt => opt.id === selectedUrgency)?.title}
-              </Text>
-              <Text style={styles.summaryPrice}>
-                {urgencyOptions.find(opt => opt.id === selectedUrgency)?.price}
-              </Text>
-            </View>
-          )}
-          
-          <Animated.View style={buttonAnimatedStyle}>
-            <TouchableOpacity
-              style={[
-                styles.continueButton,
-                !selectedUrgency && styles.disabledButton
-              ]}
-              onPress={handleContinue}
-              disabled={!selectedUrgency}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.continueButtonText,
-                !selectedUrgency && styles.disabledButtonText
-              ]}>
-                Take Package Photo
-              </Text>
-              <Ionicons 
-                name="camera" 
-                size={20} 
-                color={!selectedUrgency ? Colors.textSecondary : Colors.white} 
-              />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+        {currentStep === 1 && <UrgencyStep />}
+        {currentStep === 2 && <InstructionsStep />}
       </Animated.View>
     </View>
   );
@@ -356,293 +309,247 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    paddingTop: 50, // Account for status bar on iOS
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingVertical: 12,
     backgroundColor: Colors.background,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    zIndex: 1,
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.white,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.textPrimary,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
   },
-  placeholder: {
+  stepIndicator: {
     width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary + '15',
+  },
+  stepCounter: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    backgroundColor: Colors.background,
+  },
+  progressStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  progressDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border,
+  },
+  progressDotActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  progressDotCompleted: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  progressNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  progressNumberActive: {
+    color: Colors.white,
+  },
+  progressLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: Colors.border,
+    marginHorizontal: 8,
+  },
+  progressLineCompleted: {
+    backgroundColor: Colors.primary,
   },
   content: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
-  scrollContent: {
+  stepContainer: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingVertical: 16,
   },
-  headerSection: {
-    paddingTop: 24,
-    paddingBottom: 32,
+  stepHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
   stepTitle: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: 12,
-    lineHeight: 38,
+    marginBottom: 6,
+    textAlign: 'center',
   },
   stepSubtitle: {
     fontSize: 16,
     color: Colors.textSecondary,
-    lineHeight: 24,
-  },
-  section: {
-    marginBottom: 40,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-    lineHeight: 28,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  urgencyList: {
-    gap: 16,
-  },
-  urgencyCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  selectedUrgencyCard: {
-    borderColor: Colors.primary,
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-  },
-  urgencyCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-  },
-  urgencyIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  urgencyInfo: {
-    flex: 1,
-    marginRight: 16,
-  },
-  urgencyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 4,
+    textAlign: 'center',
     lineHeight: 22,
   },
-  selectedUrgencyTitle: {
-    color: Colors.primary,
-  },
-  urgencySubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  urgencyPriceContainer: {
-    alignItems: 'flex-end',
-  },
-  urgencyPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-  },
-  radioButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: Colors.border,
-  },
-  radioSelected: {
-    borderWidth: 2,
-  },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  instructionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -6,
-  },
-  instructionContainer: {
-    width: '50%',
-    paddingHorizontal: 6,
-    marginBottom: 12,
-  },
-  instructionChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    minHeight: 56,
-  },
-  selectedChip: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  chipIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  selectedChipIcon: {
-    backgroundColor: Colors.white + '20',
-  },
-  chipText: {
-    fontSize: 14,
-    color: Colors.textPrimary,
-    fontWeight: '500',
+  stepContent: {
     flex: 1,
-    lineHeight: 18,
+    justifyContent: 'center',
   },
-  selectedChipText: {
-    color: Colors.white,
+  stepFooter: {
+    paddingTop: 20,
   },
-  notesLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 12,
-    marginTop: 24,
+  optionsGrid: {
+    gap: 12,
+    flex: 1,
+    justifyContent: 'center',
   },
-  notesInput: {
+  optionCard: {
     backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
+    alignItems: 'center',
+    borderWidth: 2,
     borderColor: Colors.border,
-    fontSize: 14,
-    color: Colors.textPrimary,
-    minHeight: 100,
-    textAlignVertical: 'top',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    position: 'relative',
+    minHeight: 140,
+    justifyContent: 'center',
   },
-  characterCount: {
+  optionCardSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '08',
+  },
+  optionCardPopular: {
+    borderColor: Colors.primary,
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: -6,
+    right: 12,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  popularText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  optionIcon: {
+    marginBottom: 12,
+  },
+  optionName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  optionDuration: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  optionSubtitle: {
     fontSize: 12,
     color: Colors.textSecondary,
-    textAlign: 'right',
-    marginTop: 8,
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 16,
   },
-  footer: {
-    backgroundColor: Colors.white,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  footerContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  selectionSummary: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  optionPriceContainer: {
     alignItems: 'center',
-    backgroundColor: Colors.primary + '10',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
   },
-  summaryText: {
+  optionPrice: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+    textAlign: 'center',
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  chipSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chipText: {
     fontSize: 14,
     color: Colors.textPrimary,
     fontWeight: '500',
   },
-  summaryPrice: {
+  chipTextSelected: {
+    color: Colors.white,
+  },
+  textInput: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    color: Colors.primary,
-    fontWeight: '700',
+    color: Colors.textPrimary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minHeight: 80,
+    marginTop: 16,
+    textAlignVertical: 'top',
   },
   continueButton: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 25,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  disabledButton: {
-    backgroundColor: Colors.surface,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  continueButtonText: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: '600',
-    marginRight: 12,
-  },
-  disabledButtonText: {
-    color: Colors.textSecondary,
+    marginBottom: 20,
   },
 });
 

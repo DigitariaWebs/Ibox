@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,6 +18,7 @@ import Animated, {
   withTiming,
   FadeIn,
   FadeOut,
+  SlideInUp,
 } from 'react-native-reanimated';
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 import { Colors } from '../config/colors';
@@ -58,18 +59,51 @@ const PackagePhotoScreen: React.FC<PackagePhotoScreenProps> = ({
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [currentStep, setCurrentStep] = useState('Preparing analysis...');
   const cameraRef = useRef<CameraView>(null);
   
-  // Move dimensions inside component
-  // const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
   console.log('📷 PackagePhoto: Screen dimensions:', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
   
   const captureScale = useSharedValue(1);
   const photoOpacity = useSharedValue(0);
+  const analysisProgress = useSharedValue(0);
 
   useEffect(() => {
     if (capturedPhoto) {
       photoOpacity.value = withTiming(1, { duration: 300 });
+    }
+  }, [capturedPhoto]);
+
+  // Simulate AI analysis when photo is captured
+  useEffect(() => {
+    if (capturedPhoto && !isAnalyzing) {
+      setIsAnalyzing(true);
+      
+      // Simulate progressive AI analysis
+      const analysisSteps = [
+        { delay: 800, progress: 0.1, status: 'Initializing AI vision model...' },
+        { delay: 1600, progress: 0.2, status: 'Detecting package edges and corners...' },
+        { delay: 2400, progress: 0.35, status: 'Analyzing surface textures...' },
+        { delay: 3200, progress: 0.5, status: 'Calculating precise dimensions...' },
+        { delay: 4000, progress: 0.65, status: 'Estimating material density...' },
+        { delay: 4800, progress: 0.8, status: 'Computing weight distribution...' },
+        { delay: 5600, progress: 0.9, status: 'Validating measurements...' },
+        { delay: 6400, progress: 1.0, status: 'Analysis complete!' },
+      ];
+
+      analysisSteps.forEach((step, index) => {
+        setTimeout(() => {
+          analysisProgress.value = withTiming(step.progress, { duration: 400 });
+          setCurrentStep(step.status);
+          
+          if (index === analysisSteps.length - 1) {
+            setTimeout(() => {
+              continueToNext();
+            }, 800);
+          }
+        }, step.delay);
+      });
     }
   }, [capturedPhoto]);
 
@@ -82,6 +116,12 @@ const PackagePhotoScreen: React.FC<PackagePhotoScreenProps> = ({
   const photoAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: photoOpacity.value,
+    };
+  });
+
+  const progressAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      width: `${analysisProgress.value * 100}%`,
     };
   });
 
@@ -129,6 +169,9 @@ const PackagePhotoScreen: React.FC<PackagePhotoScreenProps> = ({
   const retakePicture = () => {
     photoOpacity.value = withTiming(0, { duration: 200 }, () => {
       setCapturedPhoto(null);
+      setIsAnalyzing(false);
+      analysisProgress.value = 0;
+      setCurrentStep('Preparing analysis...');
     });
   };
 
@@ -196,6 +239,60 @@ const PackagePhotoScreen: React.FC<PackagePhotoScreenProps> = ({
     );
   }
 
+  // Show AI Analysis Screen
+  if (isAnalyzing && capturedPhoto) {
+    return (
+      <View style={styles.analysisContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+        
+        <View style={styles.analysisContent}>
+          <Animated.View entering={FadeIn.delay(200)}>
+            <View style={styles.aiIcon}>
+              <MaterialIcons name="auto-awesome" size={48} color={Colors.primary} />
+            </View>
+          </Animated.View>
+          
+          <Animated.Text 
+            style={styles.analysisTitle}
+            entering={SlideInUp.delay(400)}
+          >
+            AI Package Analysis
+          </Animated.Text>
+          
+          <Animated.Text 
+            style={styles.analysisSubtitle}
+            entering={SlideInUp.delay(600)}
+          >
+            Our AI is analyzing your package photo to determine optimal pricing
+          </Animated.Text>
+          
+          <Animated.View 
+            style={styles.photoContainer}
+            entering={SlideInUp.delay(800)}
+          >
+            <Image source={{ uri: capturedPhoto }} style={styles.packagePhoto} />
+            <View style={styles.scanOverlay}>
+              <View style={styles.scanLine} />
+            </View>
+          </Animated.View>
+          
+          <Animated.View 
+            style={styles.progressContainer}
+            entering={SlideInUp.delay(1000)}
+          >
+            <Text style={styles.stepText}>{currentStep}</Text>
+            <View style={styles.progressBar}>
+              <Animated.View style={[styles.progressFill, progressAnimatedStyle]} />
+            </View>
+            <Text style={styles.progressText}>
+              {Math.round(analysisProgress.value * 100)}% Complete
+            </Text>
+          </Animated.View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="black" />
@@ -253,7 +350,7 @@ const PackagePhotoScreen: React.FC<PackagePhotoScreenProps> = ({
           </View>
         </CameraView>
       ) : (
-        /* Photo Preview */
+        /* Photo Preview with Retake Option */
         <Animated.View style={[styles.photoPreview, photoAnimatedStyle]}>
           <Image source={{ uri: capturedPhoto }} style={styles.previewImage} />
           
@@ -265,14 +362,6 @@ const PackagePhotoScreen: React.FC<PackagePhotoScreenProps> = ({
             >
               <Ionicons name="camera" size={20} color={Colors.textSecondary} />
               <Text style={styles.retakeText}>Retake</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={continueToNext}
-            >
-              <Text style={styles.continueText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color="white" />
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -472,7 +561,7 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   retakeButton: {
@@ -489,19 +578,97 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textSecondary,
   },
-  continueButton: {
-    flexDirection: 'row',
+  // Analysis Screen Styles (copied from ExpressOrderSummary)
+  analysisContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: Colors.primary,
-    borderRadius: 20,
-    gap: 8,
+    paddingHorizontal: 20,
   },
-  continueText: {
+  analysisContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  aiIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  analysisTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  analysisSubtitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  photoContainer: {
+    position: 'relative',
+    marginBottom: 32,
+  },
+  packagePhoto: {
+    width: 200,
+    height: 200,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+  },
+  scanOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scanLine: {
+    width: '80%',
+    height: 2,
+    backgroundColor: Colors.primary,
+    opacity: 0.8,
+  },
+  progressContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  stepText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 16,
+    textAlign: 'center',
+    minHeight: 20,
+  },
+  progressBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: 4,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.primary,
   },
 });
 

@@ -170,6 +170,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
     }
   };
 
+
   const handleMenuItemPress = (screen: string) => {
     onNavigate(screen);
     onClose();

@@ -45,10 +45,6 @@ import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import HelpSupportScreen from './src/screens/HelpSupportScreen';
 import AboutScreen from './src/screens/AboutScreen';
 import ServicesScreen from './src/screens/ServicesScreen';
-import ColisScreen from './src/screens/services/ColisScreen';
-import DemenagementScreen from './src/screens/services/DemenagementScreen';
-import StockageScreen from './src/screens/services/StockageScreen';
-import ExpressScreen from './src/screens/services/ExpressScreen';
 import PackagePhotoScreen from './src/screens/PackagePhotoScreen';
 import MeasuringScreen from './src/screens/MeasuringScreen';
 import OrderSummaryScreen from './src/screens/OrderSummaryScreen';
@@ -229,10 +225,6 @@ const MainNavigator: React.FC = () => {
         <Stack.Screen name="Loading" component={LoadingScreen} />
         
         {/* Service Screens */}
-        <Stack.Screen name="ColisScreen" component={ColisScreen} />
-        <Stack.Screen name="DemenagementScreen" component={DemenagementScreen} />
-        <Stack.Screen name="StockageScreen" component={StockageScreen} />
-        <Stack.Screen name="ExpressScreen" component={ExpressScreen} />
         
         {/* Settings Sub-screens */}
         <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />

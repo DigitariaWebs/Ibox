@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
-  TextInput,
+  Dimensions,
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -15,7 +15,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '../../config/colors';
 import { Text, Button } from '../../ui';
 
@@ -52,6 +52,10 @@ interface PickupService {
   icon: string;
 }
 
+// Safe window dimensions
+const windowDims = Dimensions.get('window');
+const SCREEN_WIDTH = windowDims?.width || 375;
+
 const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
   console.log('🏪 StorageFlow: Component mounted');
   
@@ -59,10 +63,8 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
   const [selectedUnit, setSelectedUnit] = useState<string>('');
   const [selectedDuration, setSelectedDuration] = useState<string>('');
   const [selectedPickup, setSelectedPickup] = useState<string>('pickup');
-  const [itemDescription, setItemDescription] = useState<string>('');
   const [needsClimateControl, setNeedsClimateControl] = useState<boolean>(false);
   const [accessFrequency, setAccessFrequency] = useState<string>('occasional');
-  const [specialInstructions, setSpecialInstructions] = useState<string>('');
 
   const buttonScale = useSharedValue(1);
 
@@ -221,7 +223,6 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
           duration: selectedDurationData?.period || '3-12 months',
           description: selectedDurationData?.description || 'Best value option',
           needsPickup: selectedPickupData?.id === 'pickup',
-          specialInstructions,
           climateControl: needsClimateControl,
           accessFrequency,
         };
@@ -260,7 +261,7 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
             currentStep > step && styles.completedStep,
           ]}>
             {currentStep > step ? (
-              <Ionicons name="checkmark" size={16} color={Colors.white} />
+              <MaterialIcons name="check" size={14} color={Colors.white} />
             ) : (
               <Text style={[
                 styles.stepNumber,
@@ -310,9 +311,9 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
                 styles.unitIcon,
                 selectedUnit === unit.id && styles.selectedUnitIcon,
               ]}>
-                <Ionicons 
-                  name={unit.icon as any} 
-                  size={32} 
+                <MaterialIcons 
+                  name={unit.icon === 'cube-outline' ? 'inventory-2' : unit.icon === 'cube' ? 'inventory' : unit.icon === 'albums' ? 'storage' : 'business'} 
+                  size={28} 
                   color={selectedUnit === unit.id ? Colors.primary : Colors.textSecondary} 
                 />
               </View>
@@ -375,8 +376,8 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
                   styles.durationIcon,
                   selectedDuration === duration.id && styles.selectedDurationIcon,
                 ]}>
-                  <Ionicons 
-                    name={duration.icon as any} 
+                  <MaterialIcons 
+                    name="schedule" 
                     size={24} 
                     color={selectedDuration === duration.id ? Colors.primary : Colors.textSecondary} 
                   />
@@ -440,7 +441,7 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
           onPress={() => setNeedsClimateControl(!needsClimateControl)}
         >
           <View style={styles.climateLeft}>
-            <Ionicons name="thermometer-outline" size={24} color={Colors.primary} />
+            <MaterialIcons name="thermostat" size={24} color={Colors.primary} />
             <View style={styles.climateInfo}>
               <Text style={styles.climateTitle}>Climate Controlled Storage</Text>
               <Text style={styles.climateDescription}>
@@ -488,8 +489,8 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
                   styles.pickupIcon,
                   selectedPickup === service.id && styles.selectedPickupIcon,
                 ]}>
-                  <Ionicons 
-                    name={service.icon as any} 
+                  <MaterialIcons 
+                    name={service.icon === 'car-outline' ? 'local-shipping' : service.icon === 'walk-outline' ? 'directions-walk' : 'business-center'} 
                     size={24} 
                     color={selectedPickup === service.id ? Colors.primary : Colors.textSecondary} 
                   />
@@ -525,29 +526,6 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
         ))}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>What are you storing?</Text>
-        <TextInput
-          style={styles.itemInput}
-          value={itemDescription}
-          onChangeText={setItemDescription}
-          placeholder="e.g., Furniture, documents, seasonal items..."
-          multiline
-          numberOfLines={3}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Special Instructions (Optional)</Text>
-        <TextInput
-          style={styles.instructionsInput}
-          value={specialInstructions}
-          onChangeText={setSpecialInstructions}
-          placeholder="Any special handling or access requirements..."
-          multiline
-          numberOfLines={3}
-        />
-      </View>
     </Animated.View>
   );
 
@@ -558,7 +536,7 @@ const StorageFlow: React.FC<StorageFlowProps> = ({ navigation, route }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Storage Service</Text>
         <View style={styles.placeholder} />
@@ -596,9 +574,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 16,
   },
   backButton: {
     width: 44,
@@ -614,8 +592,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.textPrimary,
   },
   placeholder: {
@@ -625,17 +603,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   stepContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   stepCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: Colors.surface,
     borderWidth: 2,
     borderColor: Colors.border,
@@ -651,7 +629,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   stepNumber: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.textSecondary,
   },
@@ -659,35 +637,37 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   stepLine: {
-    width: 40,
+    width: 32,
     height: 2,
     backgroundColor: Colors.border,
-    marginHorizontal: 8,
+    marginHorizontal: 6,
   },
   completedStepLine: {
     backgroundColor: Colors.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   stepContent: {
     flex: 1,
   },
   stepTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 8,
+    textAlign: 'center',
   },
   stepSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 32,
-    lineHeight: 24,
+    marginBottom: 24,
+    lineHeight: 20,
+    textAlign: 'center',
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
@@ -731,16 +711,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
   unitIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   selectedUnitIcon: {
     backgroundColor: Colors.primary + '20',
@@ -749,7 +729,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   unitTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.textPrimary,
     marginBottom: 4,
@@ -767,10 +747,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     lineHeight: 16,
+    flexWrap: 'wrap',
   },
   unitRight: {
     alignItems: 'flex-end',
-    paddingRight: 20,
+    paddingRight: 16,
+    paddingVertical: 16,
   },
   unitPrice: {
     fontSize: 18,
@@ -802,7 +784,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: Colors.white,
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     marginBottom: 12,
     borderWidth: 2,
     borderColor: Colors.border,
@@ -817,13 +799,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   durationIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   selectedDurationIcon: {
     backgroundColor: Colors.primary + '20',
@@ -861,16 +843,17 @@ const styles = StyleSheet.create({
   },
   accessOptions: {
     flexDirection: 'row',
+    gap: 8,
   },
   accessOption: {
     flex: 1,
     backgroundColor: Colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: Colors.border,
-    marginHorizontal: 6, // Add horizontal margin instead of gap
+    minHeight: 80,
   },
   selectedAccessOption: {
     borderColor: Colors.primary,
@@ -949,7 +932,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: Colors.white,
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     marginBottom: 12,
     borderWidth: 2,
     borderColor: Colors.border,
@@ -964,13 +947,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pickupIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   selectedPickupIcon: {
     backgroundColor: Colors.primary + '20',
@@ -1000,31 +983,9 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 8,
   },
-  itemInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: Colors.white,
-    textAlignVertical: 'top',
-    minHeight: 80,
-  },
-  instructionsInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: Colors.white,
-    textAlignVertical: 'top',
-    minHeight: 80,
-  },
   footer: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
+    paddingBottom: 32,
   },
   continueButton: {
     backgroundColor: Colors.primary,

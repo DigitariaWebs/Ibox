@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  Image,
 } from 'react-native';
 import Animated, {
   SlideInUp,
@@ -13,6 +14,9 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
+  withDelay,
+  withSequence,
 } from 'react-native-reanimated';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '../../config/colors';
@@ -31,20 +35,19 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
   navigation,
   route,
 }) => {
-  console.log('📋 MovingOrderSummary: Component mounted');
-  console.log('📋 MovingOrderSummary: Route params received:', Object.keys(route.params || {}));
+  console.log('🚚 MovingOrderSummary: Component mounted');
+  console.log('🚚 MovingOrderSummary: Route params received:', Object.keys(route.params || {}));
   
   const { 
     service, 
     startLocation, 
     startLocationCoords, 
     destination, 
-    apartmentSize, 
-    inventoryItems = [], 
+    apartmentSize,
+    inventoryItems = [],
     additionalServices = [], 
-    movingDate, 
-    movingTime, 
-    specialInstructions,
+    specialNotes,
+    packagePhoto,
     serviceType 
   } = route.params;
   
@@ -52,8 +55,10 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
   
   const buttonScale = useSharedValue(1);
 
+
   // Calculate estimated price based on selections
   const calculatePrice = () => {
+    
     let basePrice = 0;
     
     // Base price by apartment size
@@ -68,8 +73,11 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
         basePrice = 299;
         break;
       default:
-        basePrice = 129;
+        basePrice = 199;
     }
+    
+    // Add complexity based on inventory count
+    const inventoryComplexity = Math.min(inventoryItems.length * 5, 50);
     
     // Add price for additional services
     const servicesPricing = {
@@ -78,27 +86,25 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
       'assembly': 40,
       'storage': 100,
       'cleaning': 120,
+      'protection': 50,
     };
     
-    const servicesTotal = additionalServices.reduce((total, service) => {
-      return total + (servicesPricing[service.id] || 0);
+    const servicesTotal = additionalServices.reduce((total, serviceId) => {
+      return total + (servicesPricing[serviceId] || 0);
     }, 0);
-    
-    // Add complexity based on inventory count
-    const inventoryComplexity = Math.min(inventoryItems.length * 5, 50);
     
     return {
       base: basePrice,
-      services: servicesTotal,
       complexity: inventoryComplexity,
-      total: basePrice + servicesTotal + inventoryComplexity
+      services: servicesTotal,
+      total: basePrice + inventoryComplexity + servicesTotal
     };
   };
 
   const price = calculatePrice();
 
   const handleStartRequest = () => {
-    console.log('📋 MovingOrderSummary: Start request button pressed');
+    console.log('🚚 MovingOrderSummary: Start request button pressed');
     
     setIsProcessing(true);
     buttonScale.value = withSpring(0.95, { duration: 100 }, () => {
@@ -107,7 +113,7 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
 
     // Simulate processing
     setTimeout(() => {
-      console.log('📋 MovingOrderSummary: Navigating to DriverSearch');
+      console.log('🚚 MovingOrderSummary: Navigating to DriverSearch');
       navigation.navigate('DriverSearch', {
         ...route.params,
         price: price,
@@ -131,39 +137,48 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => {
-            console.log('📋 MovingOrderSummary: Back button pressed');
+            console.log('🚚 MovingOrderSummary: Back button pressed');
             navigation.goBack();
           }}
         >
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Moving Summary</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Moving Summary</Text>
+          <Text style={styles.headerSubtitle}>Review your moving details</Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Service Type */}
+        {/* Service Details */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(100)}>
-          <Text style={styles.sectionTitle}>Service Details</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="local-shipping" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Moving Details</Text>
+          </View>
           <View style={styles.serviceCard}>
             <View style={styles.serviceIcon}>
               <MaterialIcons name="local-shipping" size={24} color={Colors.primary} />
             </View>
             <View style={styles.serviceInfo}>
               <Text style={styles.serviceTitle}>Moving Service</Text>
-              <Text style={styles.serviceSubtitle}>{apartmentSize?.title || 'Studio / 1BR'}</Text>
-              <Text style={styles.serviceDescription}>{apartmentSize?.description || 'Small apartment'}</Text>
+              <Text style={styles.serviceSubtitle}>{apartmentSize?.title || '2-3 Chambres'}</Text>
+              <Text style={styles.serviceDescription}>{apartmentSize?.subtitle || 'Appartement familial'}</Text>
             </View>
           </View>
         </Animated.View>
 
         {/* Route Information */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(200)}>
-          <Text style={styles.sectionTitle}>Route</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="route" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Route</Text>
+          </View>
           <View style={styles.routeCard}>
             <View style={styles.routeItem}>
               <View style={styles.routeIconContainer}>
-                <Ionicons name="location" size={16} color={Colors.primary} />
+                <MaterialIcons name="my-location" size={16} color={Colors.primary} />
               </View>
               <View style={styles.routeInfo}>
                 <Text style={styles.routeLabel}>Pickup Location</Text>
@@ -175,10 +190,10 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
             
             <View style={styles.routeItem}>
               <View style={styles.routeIconContainer}>
-                <Ionicons name="flag" size={16} color={Colors.error} />
+                <MaterialIcons name="location-on" size={16} color={Colors.error} />
               </View>
               <View style={styles.routeInfo}>
-                <Text style={styles.routeLabel}>Destination</Text>
+                <Text style={styles.routeLabel}>Delivery Address</Text>
                 <Text style={styles.routeAddress}>{destination?.title || 'Destination'}</Text>
               </View>
             </View>
@@ -188,17 +203,22 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
         {/* Inventory Items */}
         {inventoryItems.length > 0 && (
           <Animated.View style={styles.section} entering={SlideInUp.delay(300)}>
-            <Text style={styles.sectionTitle}>Items to Move ({inventoryItems.length})</Text>
-            <View style={styles.inventoryCard}>
-              {inventoryItems.map((item, index) => (
-                <View key={item.id} style={styles.inventoryItem}>
-                  <View style={styles.inventoryIcon}>
-                    <Ionicons name={item.icon as any} size={20} color={Colors.primary} />
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="inventory-2" size={20} color={Colors.primary} />
+              <Text style={styles.sectionTitle}>Items to Move ({inventoryItems.length})</Text>
+            </View>
+            <View style={styles.instructionsCard}>
+              <View style={styles.inventoryGrid}>
+                {inventoryItems.map((item, index) => (
+                  <View key={item.id} style={styles.inventoryItem}>
+                    <View style={styles.inventoryIcon}>
+                      <MaterialIcons name={item.icon} size={20} color={Colors.primary} />
+                    </View>
+                    <Text style={styles.inventoryName}>{item.title}</Text>
+                    <Text style={styles.inventoryQuantity}>×{item.quantity}</Text>
                   </View>
-                  <Text style={styles.inventoryName}>{item.name}</Text>
-                  <Text style={styles.inventoryQuantity}>×{item.quantity}</Text>
-                </View>
-              ))}
+                ))}
+              </View>
             </View>
           </Animated.View>
         )}
@@ -206,52 +226,70 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
         {/* Additional Services */}
         {additionalServices.length > 0 && (
           <Animated.View style={styles.section} entering={SlideInUp.delay(400)}>
-            <Text style={styles.sectionTitle}>Additional Services</Text>
-            <View style={styles.servicesCard}>
-              {additionalServices.map((service, index) => (
-                <View key={service.id} style={styles.serviceItem}>
-                  <View style={styles.serviceItemIcon}>
-                    <Ionicons name={service.icon as any} size={20} color={Colors.primary} />
-                  </View>
-                  <View style={styles.serviceItemInfo}>
-                    <Text style={styles.serviceItemTitle}>{service.title}</Text>
-                    <Text style={styles.serviceItemDescription}>{service.description}</Text>
-                  </View>
-                  <Text style={styles.serviceItemPrice}>{service.price}</Text>
-                </View>
-              ))}
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="build" size={20} color={Colors.primary} />
+              <Text style={styles.sectionTitle}>Additional Services</Text>
+            </View>
+            <View style={styles.instructionsCard}>
+              <View style={styles.instructionsList}>
+                {additionalServices.map((serviceId, index) => {
+                  const serviceNames = {
+                    'packing': 'Service d\'emballage',
+                    'unpacking': 'Service de déballage', 
+                    'assembly': 'Montage de meubles',
+                    'storage': 'Stockage temporaire',
+                    'cleaning': 'Nettoyage',
+                    'protection': 'Protection des biens'
+                  };
+                  return (
+                    <View key={index} style={styles.instructionItem}>
+                      <MaterialIcons name="check-circle" size={16} color={Colors.primary} />
+                      <Text style={styles.instructionText}>{serviceNames[serviceId] || serviceId}</Text>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           </Animated.View>
         )}
 
         {/* Special Instructions */}
-        {specialInstructions && (
+        {specialNotes && (
           <Animated.View style={styles.section} entering={SlideInUp.delay(500)}>
-            <Text style={styles.sectionTitle}>Special Instructions</Text>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="assignment" size={20} color={Colors.primary} />
+              <Text style={styles.sectionTitle}>Special Instructions</Text>
+            </View>
             <View style={styles.instructionsCard}>
-              <Text style={styles.instructionsText}>{specialInstructions}</Text>
+              <View style={styles.notesSection}>
+                <Text style={styles.notesLabel}>Additional Notes:</Text>
+                <Text style={styles.notesText}>{specialNotes}</Text>
+              </View>
             </View>
           </Animated.View>
         )}
 
         {/* Price Breakdown */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(600)}>
-          <Text style={styles.sectionTitle}>Price Breakdown</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="receipt" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Price Breakdown</Text>
+          </View>
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>{apartmentSize?.title || 'Base service'}</Text>
+              <Text style={styles.priceLabel}>Base moving service</Text>
               <Text style={styles.priceValue}>${price.base.toFixed(2)}</Text>
             </View>
+            {price.complexity > 0 && (
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Inventory complexity</Text>
+                <Text style={styles.priceValue}>${price.complexity.toFixed(2)}</Text>
+              </View>
+            )}
             {price.services > 0 && (
               <View style={styles.priceRow}>
                 <Text style={styles.priceLabel}>Additional services</Text>
                 <Text style={styles.priceValue}>${price.services.toFixed(2)}</Text>
-              </View>
-            )}
-            {price.complexity > 0 && (
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Complexity adjustment</Text>
-                <Text style={styles.priceValue}>${price.complexity.toFixed(2)}</Text>
               </View>
             )}
             <View style={styles.priceDivider} />
@@ -265,10 +303,12 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
         {/* Estimated Time */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(700)}>
           <View style={styles.timeCard}>
-            <Ionicons name="time-outline" size={24} color={Colors.primary} />
+            <View style={styles.timeIconContainer}>
+              <MaterialIcons name="schedule" size={24} color={Colors.primary} />
+            </View>
             <View style={styles.timeInfo}>
               <Text style={styles.timeLabel}>Estimated Duration</Text>
-              <Text style={styles.timeValue}>{apartmentSize?.estimatedHours || '3-4 hours'}</Text>
+              <Text style={styles.timeValue}>{apartmentSize?.duration || '4-6h'}</Text>
             </View>
           </View>
         </Animated.View>
@@ -293,7 +333,7 @@ const MovingOrderSummary: React.FC<MovingOrderSummaryProps> = ({
             ) : (
               <>
                 <Text style={styles.startButtonText}>Find Movers</Text>
-                <Ionicons name="arrow-forward" size={20} color="white" />
+                <MaterialIcons name="arrow-forward" size={20} color="white" />
               </>
             )}
           </TouchableOpacity>
@@ -588,6 +628,42 @@ const styles = StyleSheet.create({
   },
   timeValue: {
     fontSize: 16,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  inventoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  inventoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    marginBottom: 8,
+    flex: 1,
+    minWidth: '45%',
+  },
+  inventoryIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  inventoryName: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+  },
+  inventoryQuantity: {
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.primary,
   },

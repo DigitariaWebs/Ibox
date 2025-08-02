@@ -253,16 +253,22 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
             navigation.goBack();
           }}
         >
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Express Summary</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Express Summary</Text>
+          <Text style={styles.headerSubtitle}>Review your delivery details</Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* AI Analysis Results */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(100)}>
-          <Text style={styles.sectionTitle}>📱 AI Analysis Results</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="analytics" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>AI Analysis Results</Text>
+          </View>
           <View style={styles.analysisCard}>
             <View style={styles.analysisHeader}>
               <View style={styles.aiIcon}>
@@ -275,7 +281,7 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
                 </Text>
               </View>
               <View style={styles.confidenceBadge}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                <MaterialIcons name="check-circle" size={20} color={Colors.success} />
               </View>
             </View>
             
@@ -302,7 +308,10 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
 
         {/* Service Details */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(200)}>
-          <Text style={styles.sectionTitle}>⚡ Express Details</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="flash-on" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Express Details</Text>
+          </View>
           <View style={styles.serviceCard}>
             <View style={styles.serviceIcon}>
               <MaterialIcons name="flash-on" size={24} color={Colors.primary} />
@@ -317,11 +326,14 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
 
         {/* Route Information */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(300)}>
-          <Text style={styles.sectionTitle}>📍 Route</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="route" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Route</Text>
+          </View>
           <View style={styles.routeCard}>
             <View style={styles.routeItem}>
               <View style={styles.routeIconContainer}>
-                <Ionicons name="location" size={16} color={Colors.primary} />
+                <MaterialIcons name="my-location" size={16} color={Colors.primary} />
               </View>
               <View style={styles.routeInfo}>
                 <Text style={styles.routeLabel}>Pickup Location</Text>
@@ -333,7 +345,7 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
             
             <View style={styles.routeItem}>
               <View style={styles.routeIconContainer}>
-                <Ionicons name="flag" size={16} color={Colors.error} />
+                <MaterialIcons name="location-on" size={16} color={Colors.error} />
               </View>
               <View style={styles.routeInfo}>
                 <Text style={styles.routeLabel}>Delivery Address</Text>
@@ -346,12 +358,15 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
         {/* Special Instructions */}
         {specialInstructions.length > 0 && (
           <Animated.View style={styles.section} entering={SlideInUp.delay(400)}>
-            <Text style={styles.sectionTitle}>📋 Special Instructions</Text>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="assignment" size={20} color={Colors.primary} />
+              <Text style={styles.sectionTitle}>Special Instructions</Text>
+            </View>
             <View style={styles.instructionsCard}>
               <View style={styles.instructionsList}>
                 {specialInstructions.map((instruction, index) => (
                   <View key={index} style={styles.instructionItem}>
-                    <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
+                    <MaterialIcons name="check-circle" size={16} color={Colors.primary} />
                     <Text style={styles.instructionText}>{instruction}</Text>
                   </View>
                 ))}
@@ -368,7 +383,10 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
 
         {/* Price Breakdown */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(500)}>
-          <Text style={styles.sectionTitle}>💰 Price Breakdown</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="receipt" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Price Breakdown</Text>
+          </View>
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Base delivery</Text>
@@ -403,7 +421,9 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
         {/* Estimated Time */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(600)}>
           <View style={styles.timeCard}>
-            <Ionicons name="time-outline" size={24} color={Colors.primary} />
+            <View style={styles.timeIconContainer}>
+              <MaterialIcons name="schedule" size={24} color={Colors.primary} />
+            </View>
             <View style={styles.timeInfo}>
               <Text style={styles.timeLabel}>Estimated Delivery Time</Text>
               <Text style={styles.timeValue}>
@@ -435,7 +455,7 @@ const ExpressOrderSummary: React.FC<ExpressOrderSummaryProps> = ({
             ) : (
               <>
                 <Text style={styles.startButtonText}>Find Courier</Text>
-                <Ionicons name="arrow-forward" size={20} color="white" />
+                <MaterialIcons name="arrow-forward" size={20} color="white" />
               </>
             )}
           </TouchableOpacity>
@@ -551,24 +571,35 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
+    backgroundColor: Colors.background,
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
   },
   placeholder: {
     width: 44,
@@ -580,11 +611,16 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: 16,
   },
   analysisCard: {
     backgroundColor: Colors.white,
@@ -805,9 +841,17 @@ const styles = StyleSheet.create({
   timeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${Colors.primary}10`,
+    backgroundColor: Colors.primary + '10',
     padding: 16,
     borderRadius: 12,
+  },
+  timeIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timeInfo: {
     flex: 1,

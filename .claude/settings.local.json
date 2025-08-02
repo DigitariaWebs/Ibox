@@ -4,7 +4,8 @@
       "Bash(npx expo install:*)",
       "Bash(npm install:*)",
       "Bash(rm:*)",
-      "WebFetch(domain:docs.expo.dev)"
+      "WebFetch(domain:docs.expo.dev)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

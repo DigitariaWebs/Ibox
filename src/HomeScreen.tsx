@@ -9,6 +9,7 @@ import AnimatedSearchModal from './components/AnimatedSearchModal';
 import TopNavigation from './components/TopNavigation';
 import SidebarMenu from './components/SidebarMenu';
 import ServiceSelectionModal from './components/ServiceSelectionModal';
+import NotificationModal from './components/NotificationModal';
 
 interface Place {
   place_id: string;
@@ -62,6 +63,7 @@ const HomeScreen: React.FC = () => {
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
   const [showServiceSelection, setShowServiceSelection] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<MapMarker | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<{latitude: number; longitude: number}[]>([]);
@@ -513,7 +515,7 @@ const HomeScreen: React.FC = () => {
 
   const handleNotificationPress = () => {
     console.log('🚀 Notifications pressed');
-    // TODO: Navigate to notifications screen
+    setNotificationModalVisible(true);
   };
 
   const handleSidebarNavigate = (screen: string) => {
@@ -978,6 +980,11 @@ const HomeScreen: React.FC = () => {
         onSelectService={handleServiceSelect}
         onReset={handleResetLocations}
         destination={selectedDestination?.title}
+      />
+
+      <NotificationModal
+        visible={notificationModalVisible}
+        onClose={() => setNotificationModalVisible(false)}
       />
 
       {/* Driver Tracking Panel */}

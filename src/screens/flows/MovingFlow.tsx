@@ -1,607 +1,475 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   StatusBar,
   Alert,
   TextInput,
+  Dimensions,
+  SafeAreaView,
+  Animated,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import Animated, {
-  FadeIn,
-  SlideInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '../../config/colors';
 import { Text, Button } from '../../ui';
+
+// Safe window dimensions
+const windowDims = Dimensions.get('window');
+const SCREEN_WIDTH = windowDims?.width || 375;
 
 interface MovingFlowProps {
   navigation: any;
   route: any;
 }
 
-interface ApartmentSize {
-  id: string;
-  title: string;
-  description: string;
-  rooms: string;
-  estimatedHours: string;
-  basePrice: string;
-  icon: string;
-}
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  category: string;
-  icon: string;
-  selected: boolean;
-  quantity: number;
-}
-
-interface AdditionalService {
-  id: string;
-  title: string;
-  description: string;
-  price: string;
-  icon: string;
-  selected: boolean;
-}
-
 const MovingFlow: React.FC<MovingFlowProps> = ({ navigation, route }) => {
-  console.log('🏠 MovingFlow: Component mounted');
-  
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState<number>(1);
   const [selectedApartmentSize, setSelectedApartmentSize] = useState<string>('');
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [additionalServices, setAdditionalServices] = useState<AdditionalService[]>([]);
-  const [movingDate, setMovingDate] = useState<string>('');
-  const [movingTime, setMovingTime] = useState<string>('morning');
-  const [specialInstructions, setSpecialInstructions] = useState<string>('');
+  const [selectedInventoryItems, setSelectedInventoryItems] = useState<any[]>([]);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-  const buttonScale = useSharedValue(1);
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  
+  // Scroll refs to maintain position
+  const inventoryScrollRef = useRef<ScrollView>(null);
+  const servicesScrollRef = useRef<ScrollView>(null);
 
-  console.log('🏠 MovingFlow: Initial state set, currentStep =', currentStep);
+  const animateStepTransition = () => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
-  const apartmentSizes: ApartmentSize[] = [
+  const steps = [
+    { number: 1, title: 'Taille', active: currentStep === 1 },
+    { number: 2, title: 'Inventaire', active: currentStep === 2 },
+    { number: 3, title: 'Services', active: currentStep === 3 },
+  ];
+
+  const apartmentSizeOptions = [
     {
       id: 'studio',
-      title: 'Studio / 1BR',
-      description: 'Small apartment or condo',
-      rooms: '1-2 rooms',
-      estimatedHours: '3-4 hours',
-      basePrice: 'From $129',
-      icon: 'home-outline',
+      title: 'Studio / 1 Chambre',
+      subtitle: 'Petit appartement',
+      description: '1-2 pièces, 3-4 heures',
+      price: 'À partir de $129',
+      icon: 'home',
+      duration: '3-4h',
     },
     {
       id: '2br',
-      title: '2-3 Bedrooms',
-      description: 'Standard family home',
-      rooms: '2-3 bedrooms',
-      estimatedHours: '4-6 hours',
-      basePrice: 'From $199',
-      icon: 'home',
+      title: '2-3 Chambres',
+      subtitle: 'Appartement familial',
+      description: '2-3 chambres, 4-6 heures',
+      price: 'À partir de $199',
+      icon: 'apartment',
+      duration: '4-6h',
+      popular: true,
     },
     {
       id: '4br',
-      title: '4+ Bedrooms',
-      description: 'Large house or condo',
-      rooms: '4+ bedrooms',
-      estimatedHours: '6-8 hours',
-      basePrice: 'From $299',
-      icon: 'business',
+      title: '4+ Chambres',
+      subtitle: 'Grande maison',
+      description: '4+ chambres, 6-8 heures',
+      price: 'À partir de $299',
+      icon: 'domain',
+      duration: '6-8h',
     },
   ];
 
-  const defaultInventory: InventoryItem[] = [
-    // Living Room
-    { id: 'sofa', name: 'Sofa/Couch', category: 'Living Room', icon: 'bed-outline', selected: false, quantity: 1 },
-    { id: 'tv', name: 'TV', category: 'Living Room', icon: 'tv-outline', selected: false, quantity: 1 },
-    { id: 'coffee-table', name: 'Coffee Table', category: 'Living Room', icon: 'square-outline', selected: false, quantity: 1 },
-    { id: 'bookshelf', name: 'Bookshelf', category: 'Living Room', icon: 'library-outline', selected: false, quantity: 1 },
-    
-    // Bedroom
-    { id: 'bed', name: 'Bed (Queen/King)', category: 'Bedroom', icon: 'bed', selected: false, quantity: 1 },
-    { id: 'dresser', name: 'Dresser', category: 'Bedroom', icon: 'file-tray-stacked-outline', selected: false, quantity: 1 },
-    { id: 'wardrobe', name: 'Wardrobe', category: 'Bedroom', icon: 'shirt-outline', selected: false, quantity: 1 },
-    { id: 'nightstand', name: 'Nightstand', category: 'Bedroom', icon: 'square-outline', selected: false, quantity: 2 },
-    
-    // Kitchen
-    { id: 'refrigerator', name: 'Refrigerator', category: 'Kitchen', icon: 'snow-outline', selected: false, quantity: 1 },
-    { id: 'stove', name: 'Stove/Oven', category: 'Kitchen', icon: 'flame-outline', selected: false, quantity: 1 },
-    { id: 'dishwasher', name: 'Dishwasher', category: 'Kitchen', icon: 'water-outline', selected: false, quantity: 1 },
-    { id: 'dining-table', name: 'Dining Table', category: 'Kitchen', icon: 'restaurant-outline', selected: false, quantity: 1 },
-    
-    // Office
-    { id: 'desk', name: 'Desk', category: 'Office', icon: 'desktop-outline', selected: false, quantity: 1 },
-    { id: 'office-chair', name: 'Office Chair', category: 'Office', icon: 'person-outline', selected: false, quantity: 1 },
-    { id: 'filing-cabinet', name: 'Filing Cabinet', category: 'Office', icon: 'folder-outline', selected: false, quantity: 1 },
-    
-    // Special Items
-    { id: 'piano', name: 'Piano', category: 'Special', icon: 'musical-notes-outline', selected: false, quantity: 1 },
-    { id: 'artwork', name: 'Artwork/Mirrors', category: 'Special', icon: 'image-outline', selected: false, quantity: 3 },
-    { id: 'plants', name: 'Plants', category: 'Special', icon: 'leaf-outline', selected: false, quantity: 5 },
+  const inventoryOptions = [
+    { id: 'sofa', title: 'Canapé', icon: 'weekend', category: 'furniture' },
+    { id: 'bed', title: 'Lit', icon: 'bed', category: 'furniture' },
+    { id: 'table', title: 'Table', icon: 'table-restaurant', category: 'furniture' },
+    { id: 'chair', title: 'Chaises', icon: 'chair', category: 'furniture' },
+    { id: 'dresser', title: 'Commode', icon: 'storage', category: 'furniture' },
+    { id: 'wardrobe', title: 'Armoire', icon: 'door-sliding', category: 'furniture' },
+    { id: 'tv', title: 'Télé', icon: 'tv', category: 'electronics' },
+    { id: 'fridge', title: 'Réfrigérateur', icon: 'kitchen', category: 'appliances' },
+    { id: 'washer', title: 'Lave-linge', icon: 'local-laundry-service', category: 'appliances' },
+    { id: 'boxes', title: 'Cartons', icon: 'inventory-2', category: 'boxes' },
   ];
 
-  const serviceOptions: AdditionalService[] = [
-    {
-      id: 'packing',
-      title: 'Full Packing Service',
-      description: 'We pack all your belongings professionally',
-      price: '+$80',
-      icon: 'cube-outline',
-      selected: false,
-    },
-    {
-      id: 'unpacking',
-      title: 'Unpacking Service',
-      description: 'We unpack and organize at destination',
-      price: '+$60',
-      icon: 'open-outline',
-      selected: false,
-    },
-    {
-      id: 'assembly',
-      title: 'Furniture Assembly',
-      description: 'Disassemble and reassemble furniture',
-      price: '+$40',
-      icon: 'construct-outline',
-      selected: false,
-    },
-    {
-      id: 'storage',
-      title: 'Temporary Storage',
-      description: '30-day secure storage if needed',
-      price: '+$100',
-      icon: 'archive-outline',
-      selected: false,
-    },
-    {
-      id: 'cleaning',
-      title: 'Move-out Cleaning',
-      description: 'Basic cleaning of old location',
-      price: '+$120',
-      icon: 'sparkles-outline',
-      selected: false,
-    },
+  const serviceOptions = [
+    { id: 'packing', title: 'Service d\'emballage', icon: 'inventory' },
+    { id: 'unpacking', title: 'Service de déballage', icon: 'unarchive' },
+    { id: 'assembly', title: 'Montage de meubles', icon: 'build' },
+    { id: 'storage', title: 'Stockage temporaire', icon: 'storage' },
+    { id: 'cleaning', title: 'Nettoyage', icon: 'cleaning-services' },
+    { id: 'protection', title: 'Protection des biens', icon: 'shield' },
   ];
 
-  React.useEffect(() => {
-    console.log('🏠 MovingFlow: useEffect triggered, setting inventory and services');
-    setInventoryItems(defaultInventory);
-    setAdditionalServices(serviceOptions);
-    console.log('🏠 MovingFlow: Inventory and services initialized');
-  }, []);
+  const handleApartmentSizeSelect = (sizeId: string) => {
+    setSelectedApartmentSize(sizeId);
+    setTimeout(() => {
+      setCurrentStep(2);
+      animateStepTransition();
+    }, 300);
+  };
 
-  const toggleInventoryItem = (itemId: string) => {
-    console.log('🏠 MovingFlow: Toggling inventory item:', itemId);
-    setInventoryItems(prev => 
-      prev.map(item => 
-        item.id === itemId 
-          ? { ...item, selected: !item.selected }
-          : item
-      )
-    );
+  const toggleInventoryItem = (item: any) => {
+    setSelectedInventoryItems(prev => {
+      const existing = prev.find(i => i.id === item.id);
+      if (existing) {
+        return prev.filter(i => i.id !== item.id);
+      } else {
+        return [...prev, { ...item, quantity: 1 }];
+      }
+    });
   };
 
   const updateItemQuantity = (itemId: string, quantity: number) => {
-    console.log('🏠 MovingFlow: Updating item quantity:', itemId, 'to', quantity);
-    if (quantity < 1) return;
-    setInventoryItems(prev => 
-      prev.map(item => 
-        item.id === itemId 
-          ? { ...item, quantity: Math.max(1, quantity) }
-          : item
-      )
-    );
-  };
-
-  const toggleAdditionalService = (serviceId: string) => {
-    console.log('🏠 MovingFlow: Toggling additional service:', serviceId);
-    setAdditionalServices(prev => 
-      prev.map(service => 
-        service.id === serviceId 
-          ? { ...service, selected: !service.selected }
-          : service
-      )
-    );
-  };
-
-  const handleContinue = () => {
-    console.log('🏠 MovingFlow: Continue button pressed, currentStep =', currentStep);
-    
-    if (currentStep === 1 && !selectedApartmentSize) {
-      console.log('🏠 MovingFlow: ERROR - No apartment size selected');
-      Alert.alert('Selection Required', 'Please select your apartment/house size.');
-      return;
-    }
-
-    if (currentStep === 2 && inventoryItems.filter(item => item.selected).length === 0) {
-      console.log('🏠 MovingFlow: ERROR - No inventory items selected');
-      Alert.alert('Inventory Required', 'Please select at least one item to move.');
-      return;
-    }
-
-    console.log('🏠 MovingFlow: Validation passed, proceeding...');
-    buttonScale.value = withSpring(0.95, { duration: 100 }, () => {
-      buttonScale.value = withSpring(1, { duration: 200 });
-    });
-
-    if (currentStep < 3) {
-      setTimeout(() => {
-        console.log('🏠 MovingFlow: Moving to step', currentStep + 1);
-        setCurrentStep(currentStep + 1);
-      }, 200);
+    if (quantity <= 0) {
+      setSelectedInventoryItems(prev => prev.filter(i => i.id !== itemId));
     } else {
-      // Navigate to order summary
-      setTimeout(() => {
-        console.log('🏠 MovingFlow: Navigating to OrderSummary');
-        const selectedApartment = apartmentSizes.find(apt => apt.id === selectedApartmentSize);
-        const selectedItems = inventoryItems.filter(item => item.selected);
-        const selectedServices = additionalServices.filter(service => service.selected);
-        
-        console.log('🏠 MovingFlow: Order data prepared:', {
-          apartmentSize: selectedApartment?.title,
-          itemCount: selectedItems.length,
-          serviceCount: selectedServices.length
-        });
-        
-        navigation.navigate('MovingOrderSummary', {
-          ...route.params,
-          apartmentSize: selectedApartment,
-          inventoryItems: selectedItems,
-          additionalServices: selectedServices,
-          movingDate,
-          movingTime,
-          specialInstructions,
-          serviceType: 'moving',
-        });
-      }, 200);
+      setSelectedInventoryItems(prev => 
+        prev.map(i => i.id === itemId ? { ...i, quantity } : i)
+      );
     }
+  };
+
+  const toggleService = (serviceId: string) => {
+    setSelectedServices(prev => 
+      prev.includes(serviceId)
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  };
+
+  const handleContinueToNext = () => {
+    if (currentStep === 1 && !selectedApartmentSize) {
+      Alert.alert('Sélection requise', 'Veuillez sélectionner la taille de votre appartement.');
+      return;
+    }
+    
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+      animateStepTransition();
+    } else {
+      handleSubmitMoving();
+    }
+  };
+
+  const handleSubmitMoving = () => {
+    const selectedSizeData = apartmentSizeOptions.find(opt => opt.id === selectedApartmentSize);
+    
+    // Moving service goes directly to summary without photo
+    navigation.navigate('MovingOrderSummary', {
+      ...route.params,
+      apartmentSize: selectedSizeData,
+      inventoryItems: selectedInventoryItems,
+      additionalServices: selectedServices,
+      serviceType: 'moving',
+    });
   };
 
   const handleBack = () => {
-    console.log('🏠 MovingFlow: Back button pressed, currentStep =', currentStep);
     if (currentStep > 1) {
-      console.log('🏠 MovingFlow: Going back to step', currentStep - 1);
       setCurrentStep(currentStep - 1);
+      animateStepTransition();
     } else {
-      console.log('🏠 MovingFlow: Navigating back to previous screen');
       navigation.goBack();
     }
   };
 
-  const buttonAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: buttonScale.value }],
-    };
-  });
-
-  const renderStepIndicator = () => {
-    console.log('🏠 MovingFlow: Rendering step indicator for step', currentStep);
-    return (
-      <View style={styles.stepIndicator}>
-        {[1, 2, 3].map((step) => (
-          <View key={step} style={styles.stepContainer}>
-            <View style={[
-              styles.stepCircle,
-              currentStep >= step && styles.activeStep,
-              currentStep > step && styles.completedStep,
-            ]}>
-              {currentStep > step ? (
-                <Ionicons name="checkmark" size={16} color={Colors.white} />
-              ) : (
-                <Text style={[
-                  styles.stepNumber,
-                  currentStep >= step && styles.activeStepText,
-                ]}>
-                  {step}
-                </Text>
-              )}
-            </View>
-            {step < 3 && (
-              <View style={[
-                styles.stepLine,
-                currentStep > step && styles.completedStepLine,
-              ]} />
+  const ProgressIndicator = () => (
+    <View style={styles.progressContainer}>
+      {steps.map((step, index) => (
+        <View key={step.number} style={styles.progressStep}>
+          <View style={[
+            styles.progressDot,
+            step.active && styles.progressDotActive,
+            currentStep > step.number && styles.progressDotCompleted,
+          ]}>
+            {currentStep > step.number ? (
+              <MaterialIcons name="check" size={12} color={Colors.white} />
+            ) : (
+              <Text style={[
+                styles.progressNumber,
+                step.active && styles.progressNumberActive,
+              ]}>{step.number}</Text>
             )}
           </View>
-        ))}
+          {index < steps.length - 1 && (
+            <View style={[
+              styles.progressLine,
+              currentStep > step.number && styles.progressLineCompleted,
+            ]} />
+          )}
+        </View>
+      ))}
+    </View>
+  );
+
+  const ApartmentSizeStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>Quelle est la taille ?</Text>
+        <Text style={styles.stepSubtitle}>Sélectionnez la taille de votre appartement</Text>
       </View>
-    );
-  };
-
-  const renderStep1 = () => {
-    console.log('🏠 MovingFlow: Rendering step 1 - apartment size selection');
-    return (
-      <Animated.View style={styles.stepContent} entering={FadeIn}>
-        <Text style={styles.stepTitle}>What size is your move?</Text>
-        <Text style={styles.stepSubtitle}>
-          Help us estimate the right team size and truck for your move
-        </Text>
-
-        {apartmentSizes.map((size, index) => {
-          console.log('🏠 MovingFlow: Rendering size option:', size.id);
-          return (
-            <Animated.View
-              key={size.id}
-              entering={SlideInUp.delay(100 + index * 100)}
+      
+      <View style={styles.stepContent}>
+        <View style={styles.optionsGrid}>
+          {apartmentSizeOptions.map((option) => (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.optionCard,
+                selectedApartmentSize === option.id && styles.optionCardSelected,
+                option.popular && styles.optionCardPopular,
+              ]}
+              onPress={() => handleApartmentSizeSelect(option.id)}
+              activeOpacity={0.7}
             >
-              <TouchableOpacity
-                style={[
-                  styles.sizeOption,
-                  selectedApartmentSize === size.id && styles.selectedSizeOption,
-                ]}
-                onPress={() => {
-                  console.log('🏠 MovingFlow: Apartment size selected:', size.id);
-                  setSelectedApartmentSize(size.id);
-                }}
-              >
-                <View style={styles.sizeOptionLeft}>
-                  <View style={[
-                    styles.sizeIcon,
-                    selectedApartmentSize === size.id && styles.selectedSizeIcon,
-                  ]}>
-                    <Ionicons 
-                      name={size.icon as any} 
-                      size={32} 
-                      color={selectedApartmentSize === size.id ? Colors.primary : Colors.textSecondary} 
-                    />
-                  </View>
-                  <View style={styles.sizeInfo}>
-                    <Text style={[
-                      styles.sizeTitle,
-                      selectedApartmentSize === size.id && styles.selectedSizeTitle,
-                    ]}>
-                      {size.title}
-                    </Text>
-                    <Text style={styles.sizeDescription}>{size.description}</Text>
-                    <Text style={styles.sizeDetails}>{size.rooms} • {size.estimatedHours}</Text>
-                  </View>
+              {option.popular && (
+                <View style={styles.popularBadge}>
+                  <Text style={styles.popularText}>POPULAIRE</Text>
                 </View>
-                <View style={styles.sizeRight}>
-                  <Text style={[
-                    styles.sizePrice,
-                    selectedApartmentSize === size.id && { color: Colors.primary }
-                  ]}>
-                    {size.basePrice}
-                  </Text>
-                  <View style={[
-                    styles.radioButton,
-                    selectedApartmentSize === size.id && styles.radioSelected,
-                  ]}>
-                    {selectedApartmentSize === size.id && (
-                      <View style={styles.radioInner} />
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-          );
-        })}
-      </Animated.View>
-    );
-  };
+              )}
+              
+              <View style={styles.optionIcon}>
+                <MaterialIcons name={option.icon} size={28} color={Colors.primary} />
+              </View>
+              
+              <Text style={styles.optionName}>{option.title}</Text>
+              <Text style={styles.optionDuration}>{option.duration}</Text>
+              <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+              
+              <View style={styles.optionPriceContainer}>
+                <Text style={styles.optionPrice}>{option.price}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+      
+    </View>
+  );
 
-  const renderStep2 = () => {
-    console.log('🏠 MovingFlow: Rendering step 2 - inventory selection');
-    const categories = ['Living Room', 'Bedroom', 'Kitchen', 'Office', 'Special'];
+  const InventoryStep = () => {
+    const [currentPage, setCurrentPage] = useState(0);
+    const itemsPerPage = 6;
+    const totalPages = Math.ceil(inventoryOptions.length / itemsPerPage);
+    
+    const getCurrentPageItems = () => {
+      const startIndex = currentPage * itemsPerPage;
+      return inventoryOptions.slice(startIndex, startIndex + itemsPerPage);
+    };
     
     return (
-      <Animated.View style={styles.stepContent} entering={FadeIn}>
-        <Text style={styles.stepTitle}>What needs to be moved?</Text>
-        <Text style={styles.stepSubtitle}>
-          Select items you need moved and adjust quantities
-        </Text>
-
-        {categories.map((category) => {
-          const categoryItems = inventoryItems.filter(item => item.category === category);
-          console.log('🏠 MovingFlow: Rendering category:', category, 'with', categoryItems.length, 'items');
-          if (categoryItems.length === 0) return null;
-
-          return (
-            <View key={category} style={styles.categorySection}>
-              <Text style={styles.categoryTitle}>{category}</Text>
-              {categoryItems.map((item, index) => {
-                console.log('🏠 MovingFlow: Rendering inventory item:', item.id, 'selected:', item.selected);
-                return (
-                  <Animated.View
-                    key={item.id}
-                    entering={SlideInUp.delay(100 + index * 50)}
-                  >
-                    <View style={[
-                      styles.inventoryItem,
-                      item.selected && styles.selectedInventoryItem,
-                    ]}>
-                      <TouchableOpacity
-                        style={styles.inventoryItemLeft}
-                        onPress={() => {
-                          console.log('🏠 MovingFlow: Inventory item clicked:', item.id);
-                          toggleInventoryItem(item.id);
-                        }}
-                      >
-                        <View style={[
-                          styles.inventoryIcon,
-                          item.selected && styles.selectedInventoryIcon,
-                        ]}>
-                          <Ionicons 
-                            name={item.icon as any} 
-                            size={20} 
-                            color={item.selected ? Colors.primary : Colors.textSecondary} 
-                          />
-                        </View>
-                        <Text style={[
-                          styles.inventoryName,
-                          item.selected && styles.selectedInventoryName,
-                        ]}>
-                          {item.name}
-                        </Text>
-                      </TouchableOpacity>
-                      
-                      {item.selected && (
-                        <View style={styles.quantityControls}>
-                          <TouchableOpacity
-                            style={styles.quantityButton}
-                            onPress={() => {
-                              console.log('🏠 MovingFlow: Decreasing quantity for:', item.id);
-                              updateItemQuantity(item.id, item.quantity - 1);
-                            }}
-                          >
-                            <Ionicons name="remove" size={16} color={Colors.primary} />
-                          </TouchableOpacity>
-                          <Text style={styles.quantityText}>{item.quantity}</Text>
-                          <TouchableOpacity
-                            style={styles.quantityButton}
-                            onPress={() => {
-                              console.log('🏠 MovingFlow: Increasing quantity for:', item.id);
-                              updateItemQuantity(item.id, item.quantity + 1);
-                            }}
-                          >
-                            <Ionicons name="add" size={16} color={Colors.primary} />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  </Animated.View>
-                );
-              })}
+      <View style={styles.stepContainer}>
+        <View style={styles.stepHeader}>
+          <Text style={styles.stepTitle}>Que déménagez-vous ?</Text>
+          <Text style={styles.stepSubtitle}>Sélectionnez vos meubles et objets</Text>
+          {totalPages > 1 && (
+            <View style={styles.paginationInfo}>
+              <Text style={styles.paginationText}>{currentPage + 1} / {totalPages}</Text>
             </View>
-          );
-        })}
-      </Animated.View>
-    );
-  };
-
-  const renderStep3 = () => {
-    console.log('🏠 MovingFlow: Rendering step 3 - additional services');
-    return (
-      <Animated.View style={styles.stepContent} entering={FadeIn}>
-        <Text style={styles.stepTitle}>Additional Services</Text>
-        <Text style={styles.stepSubtitle}>
-          Choose optional services to make your move easier
-        </Text>
-
-        <View style={styles.servicesSection}>
-          {additionalServices.map((service, index) => {
-            console.log('🏠 MovingFlow: Rendering service option:', service.id, 'selected:', service.selected);
-            return (
-              <Animated.View
-                key={service.id}
-                entering={SlideInUp.delay(100 + index * 50)}
-              >
+          )}
+        </View>
+        
+        <View style={styles.stepContent}>
+          <View style={styles.inventoryGrid}>
+            {getCurrentPageItems().map((item) => {
+              const selectedItem = selectedInventoryItems.find(i => i.id === item.id);
+              const isSelected = !!selectedItem;
+              
+              return (
                 <TouchableOpacity
+                  key={item.id}
                   style={[
-                    styles.serviceOption,
-                    service.selected && styles.selectedServiceOption,
+                    styles.inventoryCard,
+                    isSelected && styles.inventoryCardSelected,
                   ]}
-                  onPress={() => {
-                    console.log('🏠 MovingFlow: Service option clicked:', service.id);
-                    toggleAdditionalService(service.id);
-                  }}
+                  onPress={() => toggleInventoryItem(item)}
+                  activeOpacity={0.7}
                 >
-                  <View style={styles.serviceLeft}>
-                    <View style={[
-                      styles.serviceIcon,
-                      service.selected && styles.selectedServiceIcon,
-                    ]}>
-                      <Ionicons 
-                        name={service.icon as any} 
-                        size={24} 
-                        color={service.selected ? Colors.primary : Colors.textSecondary} 
-                      />
-                    </View>
-                    <View style={styles.serviceInfo}>
-                      <Text style={[
-                        styles.serviceTitle,
-                        service.selected && styles.selectedServiceTitle,
-                      ]}>
-                        {service.title}
-                      </Text>
-                      <Text style={styles.serviceDescription}>{service.description}</Text>
-                    </View>
+                  <View style={styles.inventoryIcon}>
+                    <MaterialIcons name={item.icon} size={20} color={isSelected ? Colors.white : Colors.primary} />
                   </View>
-                  <View style={styles.serviceRight}>
-                    <Text style={[
-                      styles.servicePrice,
-                      service.selected && { color: Colors.primary }
-                    ]}>
-                      {service.price}
-                    </Text>
-                    <View style={[
-                      styles.checkbox,
-                      service.selected && styles.checkboxSelected,
-                    ]}>
-                      {service.selected && (
-                        <Ionicons name="checkmark" size={16} color={Colors.white} />
-                      )}
+                  <Text style={[
+                    styles.inventoryName,
+                    isSelected && styles.inventoryNameSelected,
+                  ]}>{item.title}</Text>
+                  
+                  {isSelected && (
+                    <View style={styles.quantityContainer}>
+                      <TouchableOpacity
+                        style={styles.quantityButton}
+                        onPress={() => updateItemQuantity(item.id, selectedItem.quantity - 1)}
+                      >
+                        <MaterialIcons name="remove" size={12} color={Colors.white} />
+                      </TouchableOpacity>
+                      <Text style={styles.quantityText}>{selectedItem.quantity}</Text>
+                      <TouchableOpacity
+                        style={styles.quantityButton}
+                        onPress={() => updateItemQuantity(item.id, selectedItem.quantity + 1)}
+                      >
+                        <MaterialIcons name="add" size={12} color={Colors.white} />
+                      </TouchableOpacity>
                     </View>
-                  </View>
+                  )}
                 </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
+              );
+            })}
+          </View>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <View style={styles.paginationContainer}>
+              <TouchableOpacity
+                style={[styles.paginationButton, currentPage === 0 && styles.paginationButtonDisabled]}
+                onPress={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+              >
+                <MaterialIcons name="chevron-left" size={24} color={currentPage === 0 ? Colors.textSecondary : Colors.primary} />
+              </TouchableOpacity>
+              
+              <View style={styles.paginationDots}>
+                {Array.from({ length: totalPages }, (_, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.paginationDot,
+                      currentPage === index && styles.paginationDotActive,
+                    ]}
+                    onPress={() => setCurrentPage(index)}
+                  />
+                ))}
+              </View>
+              
+              <TouchableOpacity
+                style={[styles.paginationButton, currentPage === totalPages - 1 && styles.paginationButtonDisabled]}
+                onPress={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage === totalPages - 1}
+              >
+                <MaterialIcons name="chevron-right" size={24} color={currentPage === totalPages - 1 ? Colors.textSecondary : Colors.primary} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-
-        <View style={styles.instructionsSection}>
-          <Text style={styles.sectionTitle}>Special Instructions (Optional)</Text>
-          <TextInput
-            style={styles.instructionsInput}
-            value={specialInstructions}
-            onChangeText={(text) => {
-              console.log('🏠 MovingFlow: Special instructions updated:', text.length, 'characters');
-              setSpecialInstructions(text);
-            }}
-            placeholder="e.g., Fragile items, parking restrictions, stairs..."
-            multiline
-            numberOfLines={4}
-          />
-        </View>
-      </Animated.View>
-    );
-  };
-
-  return (
-    <View style={styles.container}>
-      {console.log('🏠 MovingFlow: Rendering main container for step', currentStep)}
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        {console.log('🏠 MovingFlow: Rendering header')}
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Moving Service</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      {/* Step Indicator */}
-      {console.log('🏠 MovingFlow: About to render step indicator')}
-      {renderStepIndicator()}
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {console.log('🏠 MovingFlow: Rendering ScrollView content for step', currentStep)}
-        {currentStep === 1 && renderStep1()}
-        {currentStep === 2 && renderStep2()}
-        {currentStep === 3 && renderStep3()}
-      </ScrollView>
-
-      {/* Continue Button */}
-      {console.log('🏠 MovingFlow: Rendering footer with continue button')}
-      <Animated.View style={styles.footer} entering={FadeIn.delay(500)}>
-        <Animated.View style={buttonAnimatedStyle}>
+        
+        <View style={styles.stepFooter}>
           <Button
-            title={currentStep < 3 ? 'Continue' : 'Continue to Summary'}
-            onPress={handleContinue}
+            title="Continuer"
+            onPress={handleContinueToNext}
             style={styles.continueButton}
           />
-        </Animated.View>
-      </Animated.View>
+        </View>
+      </View>
+    );
+  };
+
+  const ServicesStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>Services additionnels</Text>
+        <Text style={styles.stepSubtitle}>Sélectionnez les services que vous souhaitez</Text>
+      </View>
+      
+      <View style={styles.stepContentServices}>
+        <View style={styles.servicesGrid}>
+          {serviceOptions.map((service) => (
+            <TouchableOpacity
+              key={service.id}
+              style={[
+                styles.serviceCard,
+                selectedServices.includes(service.id) && styles.serviceCardSelected,
+              ]}
+              onPress={() => toggleService(service.id)}
+              activeOpacity={0.7}
+            >
+              <View style={[
+                styles.serviceIconContainer,
+                selectedServices.includes(service.id) && styles.serviceIconContainerSelected,
+              ]}>
+                <MaterialIcons 
+                  name={service.icon} 
+                  size={20} 
+                  color={selectedServices.includes(service.id) ? Colors.white : Colors.primary} 
+                />
+              </View>
+              <Text style={[
+                styles.serviceTitle,
+                selectedServices.includes(service.id) && styles.serviceTitleSelected,
+              ]}>{service.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
+      </View>
+      
+      <View style={styles.stepFooter}>
+        <Button
+          title="Voir le résumé"
+          onPress={handleContinueToNext}
+          style={styles.continueButton}
+        />
+      </View>
     </View>
+  );
+
+  return (
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 100}
+      enabled={true}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      {/* Custom Header with Back Button */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
+        </TouchableOpacity>
+        
+        <Text style={styles.headerTitle}>Moving Service</Text>
+        
+        <View style={styles.stepIndicator}>
+          <Text style={styles.stepCounter}>{currentStep}/3</Text>
+        </View>
+      </View>
+
+      {/* Progress Indicator */}
+      <ProgressIndicator />
+
+      {/* Step Content - Full Screen */}
+      <Animated.View 
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {currentStep === 1 && <ApartmentSizeStep />}
+        {currentStep === 2 && <InventoryStep />}
+        {currentStep === 3 && <ServicesStep />}
+      </Animated.View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -609,357 +477,363 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    paddingTop: 50, // Account for status bar on iOS
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingVertical: 12,
+    backgroundColor: Colors.background,
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.white,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.textPrimary,
-  },
-  placeholder: {
-    width: 44,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
   },
   stepIndicator: {
-    flexDirection: 'row',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    backgroundColor: Colors.primary + '15',
   },
-  stepContainer: {
+  stepCounter: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    backgroundColor: Colors.background,
+  },
+  progressStep: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  stepCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  progressDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
     borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  activeStep: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '20',
-  },
-  completedStep: {
+  progressDotActive: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  stepNumber: {
-    fontSize: 16,
+  progressDotCompleted: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  progressNumber: {
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.textSecondary,
   },
-  activeStepText: {
-    color: Colors.primary,
+  progressNumberActive: {
+    color: Colors.white,
   },
-  stepLine: {
+  progressLine: {
     width: 40,
     height: 2,
     backgroundColor: Colors.border,
     marginHorizontal: 8,
   },
-  completedStepLine: {
+  progressLineCompleted: {
     backgroundColor: Colors.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    backgroundColor: Colors.background,
   },
-  stepContent: {
+  stepContainer: {
     flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  stepHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
   stepTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 6,
+    textAlign: 'center',
   },
   stepSubtitle: {
     fontSize: 16,
     color: Colors.textSecondary,
-    marginBottom: 32,
-    lineHeight: 24,
+    textAlign: 'center',
+    lineHeight: 22,
   },
-  sizeOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  stepContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  stepFooter: {
+    paddingTop: 20,
+  },
+  optionsGrid: {
+    gap: 12,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  optionCard: {
     backgroundColor: Colors.white,
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    padding: 16,
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: Colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 4,
-  },
-  selectedSizeOption: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '05',
-  },
-  sizeOptionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  sizeIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  selectedSizeIcon: {
-    backgroundColor: Colors.primary + '20',
-  },
-  sizeInfo: {
-    flex: 1,
-  },
-  sizeTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  selectedSizeTitle: {
-    color: Colors.primary,
-  },
-  sizeDescription: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  sizeDetails: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  sizeRight: {
-    alignItems: 'flex-end',
-  },
-  sizePrice: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-  },
-  radioButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: 'center',
+    elevation: 2,
+    position: 'relative',
+    minHeight: 140,
     justifyContent: 'center',
   },
-  radioSelected: {
+  optionCardSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '08',
+  },
+  optionCardPopular: {
     borderColor: Colors.primary,
   },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  popularBadge: {
+    position: 'absolute',
+    top: -6,
+    right: 12,
     backgroundColor: Colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
-  categorySection: {
-    marginBottom: 24,
+  popularText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.white,
   },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.textPrimary,
+  optionIcon: {
     marginBottom: 12,
   },
-  inventoryItem: {
-    flexDirection: 'row',
+  optionName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  optionDuration: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  optionSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  optionPriceContainer: {
     alignItems: 'center',
+  },
+  optionPrice: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+    textAlign: 'center',
+  },
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
     justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  serviceCard: {
+    width: (SCREEN_WIDTH - 70) / 3,
     backgroundColor: Colors.white,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  selectedInventoryItem: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '05',
-  },
-  inventoryItemLeft: {
-    flexDirection: 'row',
+    padding: 12,
     alignItems: 'center',
-    flex: 1,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    minHeight: 80,
+    justifyContent: 'center',
+  },
+  serviceCardSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '08',
+  },
+  serviceIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  serviceIconContainerSelected: {
+    backgroundColor: Colors.primary,
+  },
+  serviceTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  serviceTitleSelected: {
+    color: Colors.primary,
+  },
+  continueButton: {
+    marginBottom: 20,
+  },
+  continueButtonDisabled: {
+    backgroundColor: Colors.textSecondary,
+    opacity: 0.5,
+  },
+  inventoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  inventoryCard: {
+    width: (SCREEN_WIDTH - 70) / 3,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    minHeight: 100,
+    justifyContent: 'center',
+  },
+  inventoryCardSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
   },
   inventoryIcon: {
+    marginBottom: 8,
+  },
+  inventoryName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  inventoryNameSelected: {
+    color: Colors.white,
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quantityButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.white,
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  paginationInfo: {
+    marginTop: 8,
+  },
+  paginationText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 16,
+  },
+  paginationButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  selectedInventoryIcon: {
-    backgroundColor: Colors.primary + '20',
+  paginationButtonDisabled: {
+    opacity: 0.5,
   },
-  inventoryName: {
-    fontSize: 16,
-    color: Colors.textPrimary,
+  paginationDots: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.border,
+  },
+  paginationDotActive: {
+    backgroundColor: Colors.primary,
+  },
+  stepContentServices: {
     flex: 1,
-  },
-  selectedInventoryName: {
-    color: Colors.primary,
-    fontWeight: '500',
-  },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quantityButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.primary + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 8,
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.primary,
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  servicesSection: {
-    marginBottom: 24,
-  },
-  serviceOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: Colors.border,
-  },
-  selectedServiceOption: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '05',
-  },
-  serviceLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  serviceIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  selectedServiceIcon: {
-    backgroundColor: Colors.primary + '20',
-  },
-  serviceInfo: {
-    flex: 1,
-  },
-  serviceTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  selectedServiceTitle: {
-    color: Colors.primary,
-  },
-  serviceDescription: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  serviceRight: {
-    alignItems: 'flex-end',
-  },
-  servicePrice: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  instructionsSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 16,
-  },
-  instructionsInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: Colors.white,
-    textAlignVertical: 'top',
-    minHeight: 100,
-  },
-  footer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  continueButton: {
-    backgroundColor: Colors.primary,
   },
 });
 
-export default MovingFlow; 
+export default MovingFlow;

@@ -1,22 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   StatusBar,
   Alert,
   TextInput,
   Dimensions,
+  SafeAreaView,
+  Animated,
 } from 'react-native';
-import Animated, {
-  FadeIn,
-  SlideInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '../../config/colors';
 import { Text, Button } from '../../ui';
 
@@ -30,364 +24,281 @@ interface StandardFlowProps {
 }
 
 const StandardFlow: React.FC<StandardFlowProps> = ({ navigation, route }) => {
-  console.log('📦 StandardFlow: Component mounted');
-  
-  const [selectedDeliveryWindow, setSelectedDeliveryWindow] = useState<string>('');
-  const [specialInstructions, setSpecialInstructions] = useState<string[]>([]);
-  const [deliveryNotes, setDeliveryNotes] = useState<string>('');
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [selectedTimeWindow, setSelectedTimeWindow] = useState<string>('');
+  const [selectedInstructions, setSelectedInstructions] = useState<string[]>([]);
+  const [specialNotes, setSpecialNotes] = useState<string>('');
 
-  const buttonScale = useSharedValue(1);
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
-  console.log('📦 StandardFlow: Initial state set');
+  const animateStepTransition = () => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
-  const deliveryWindows = [
+  const steps = [
+    { number: 1, title: 'Créneau', active: currentStep === 1 },
+    { number: 2, title: 'Instructions', active: currentStep === 2 },
+  ];
+
+  const timeWindowOptions = [
     {
       id: 'morning',
-      title: 'Morning Delivery',
-      timeRange: '8:00 AM - 12:00 PM',
-      description: 'Perfect for business deliveries',
+      title: 'Matin',
+      subtitle: 'Livraison le matin',
+      timeRange: '8h00 - 12h00',
       icon: 'wb-sunny',
-      color: '#FFB347',
+      duration: '4h',
     },
     {
       id: 'afternoon',
-      title: 'Afternoon Delivery',
-      timeRange: '12:00 PM - 6:00 PM',
-      description: 'Most flexible option',
+      title: 'Après-midi',
+      subtitle: 'Livraison l\'après-midi',
+      timeRange: '12h00 - 18h00',
       icon: 'wb-cloudy',
-      color: '#87CEEB',
+      duration: '6h',
+      popular: true,
     },
     {
       id: 'evening',
-      title: 'Evening Delivery',
-      timeRange: '6:00 PM - 9:00 PM',
-      description: 'Great for residential deliveries',
+      title: 'Soir',
+      subtitle: 'Livraison en soirée',
+      timeRange: '18h00 - 21h00',
       icon: 'brightness-2',
-      color: '#9370DB',
-    },
-    {
-      id: 'anytime',
-      title: 'Any Time',
-      timeRange: '8:00 AM - 9:00 PM',
-      description: 'Standard delivery window',
-      icon: 'schedule',
-      color: Colors.primary,
+      duration: '3h',
     },
   ];
 
   const instructionOptions = [
-    { id: 'doorbell', title: 'Ring doorbell', icon: 'notifications-outline' },
-    { id: 'concierge', title: 'Leave with concierge', icon: 'person-outline' },
-    { id: 'safe_place', title: 'Safe place delivery', icon: 'shield-outline' },
-    { id: 'no_substitutes', title: 'No substitutes', icon: 'close-circle-outline' },
-    { id: 'call_first', title: 'Call before delivery', icon: 'call-outline' },
-    { id: 'fragile', title: 'Handle with care', icon: 'warning-outline' },
+    { id: 'doorbell', title: 'Sonner à la porte', icon: 'notifications' },
+    { id: 'concierge', title: 'Laisser au concierge', icon: 'person' },
+    { id: 'safe_place', title: 'Lieu sûr', icon: 'security' },
+    { id: 'call_first', title: 'Appeler avant', icon: 'phone' },
+    { id: 'fragile', title: 'Fragile', icon: 'warning' },
+    { id: 'signature', title: 'Signature requise', icon: 'edit' },
   ];
 
-  const handleDeliveryWindowSelect = (windowId: string) => {
-    console.log('📦 StandardFlow: Delivery window selected:', windowId);
-    setSelectedDeliveryWindow(windowId);
+  const handleTimeWindowSelect = (windowId: string) => {
+    setSelectedTimeWindow(windowId);
+    setTimeout(() => {
+      setCurrentStep(2);
+      animateStepTransition();
+    }, 300);
   };
 
   const toggleInstruction = (instructionId: string) => {
-    console.log('📦 StandardFlow: Toggling instruction:', instructionId);
-    setSpecialInstructions(prev => 
+    setSelectedInstructions(prev => 
       prev.includes(instructionId)
         ? prev.filter(id => id !== instructionId)
         : [...prev, instructionId]
     );
   };
 
-  const handleContinue = () => {
-    console.log('📦 StandardFlow: Continue button pressed');
-    console.log('📦 StandardFlow: Selected delivery window:', selectedDeliveryWindow);
-    console.log('📦 StandardFlow: Selected instructions:', specialInstructions);
-    
-    if (!selectedDeliveryWindow) {
-      console.log('📦 StandardFlow: ERROR - No delivery window selected');
-      Alert.alert('Selection Required', 'Please select a delivery time window.');
+  const handleTakePhoto = () => {
+    if (!selectedTimeWindow) {
+      Alert.alert('Sélection requise', 'Veuillez sélectionner un créneau de livraison.');
       return;
     }
 
-    console.log('📦 StandardFlow: Validation passed, proceeding to package photo');
-    buttonScale.value = withSpring(0.95, { duration: 100 }, () => {
-      buttonScale.value = withSpring(1, { duration: 200 });
+    const selectedWindowData = timeWindowOptions.find(opt => opt.id === selectedTimeWindow);
+    
+    navigation.navigate('PackagePhoto', {
+      ...route.params,
+      deliveryWindow: selectedWindowData,
+      specialInstructions: selectedInstructions,
+      specialNotes,
+      serviceType: 'standard',
+      nextScreen: 'Measuring',
     });
-
-    setTimeout(() => {
-      console.log('📦 StandardFlow: Navigating to PackagePhoto');
-      const selectedWindowData = deliveryWindows.find(window => window.id === selectedDeliveryWindow);
-      
-      console.log('📦 StandardFlow: Order data prepared:', {
-        deliveryWindow: selectedWindowData?.title,
-        instructionCount: specialInstructions.length
-      });
-      
-      navigation.navigate('PackagePhoto', {
-        ...route.params,
-        deliveryWindow: selectedWindowData,
-        specialInstructions: specialInstructions,
-        deliveryNotes,
-        serviceType: 'standard',
-        nextScreen: 'Measuring', // StandardFlow goes to Measuring then StandardOrderSummary
-      });
-    }, 200);
   };
 
-  const buttonAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: buttonScale.value }],
-    };
-  });
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      animateStepTransition();
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const ProgressIndicator = () => (
+    <View style={styles.progressContainer}>
+      {steps.map((step, index) => (
+        <View key={step.number} style={styles.progressStep}>
+          <View style={[
+            styles.progressDot,
+            step.active && styles.progressDotActive,
+            currentStep > step.number && styles.progressDotCompleted,
+          ]}>
+            {currentStep > step.number ? (
+              <MaterialIcons name="check" size={12} color={Colors.white} />
+            ) : (
+              <Text style={[
+                styles.progressNumber,
+                step.active && styles.progressNumberActive,
+              ]}>{step.number}</Text>
+            )}
+          </View>
+          {index < steps.length - 1 && (
+            <View style={[
+              styles.progressLine,
+              currentStep > step.number && styles.progressLineCompleted,
+            ]} />
+          )}
+        </View>
+      ))}
+    </View>
+  );
+
+  const TimeWindowStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>Quel créneau préférez-vous ?</Text>
+        <Text style={styles.stepSubtitle}>Sélectionnez votre créneau de livraison</Text>
+      </View>
+      
+      <View style={styles.stepContent}>
+        <View style={styles.optionsGrid}>
+          {timeWindowOptions.map((option) => (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.optionCard,
+                selectedTimeWindow === option.id && styles.optionCardSelected,
+                option.popular && styles.optionCardPopular,
+              ]}
+              onPress={() => handleTimeWindowSelect(option.id)}
+              activeOpacity={0.7}
+            >
+              {option.popular && (
+                <View style={styles.popularBadge}>
+                  <Text style={styles.popularText}>POPULAIRE</Text>
+                </View>
+              )}
+              
+              <View style={styles.optionIcon}>
+                <MaterialIcons name={option.icon} size={28} color={Colors.primary} />
+              </View>
+              
+              <Text style={styles.optionName}>{option.title}</Text>
+              <Text style={styles.optionDuration}>{option.duration}</Text>
+              <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+              
+              <View style={styles.optionPriceContainer}>
+                <Text style={styles.optionPrice}>{option.timeRange}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+
+  const InstructionsStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>Instructions de livraison</Text>
+        <Text style={styles.stepSubtitle}>Sélectionnez les options qui vous conviennent</Text>
+      </View>
+      
+      <View style={styles.stepContent}>
+        <View style={styles.chipsContainer}>
+          {instructionOptions.map((chip) => (
+            <TouchableOpacity
+              key={chip.id}
+              style={[
+                styles.chip,
+                selectedInstructions.includes(chip.id) && styles.chipSelected,
+              ]}
+              onPress={() => toggleInstruction(chip.id)}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons 
+                name={chip.icon} 
+                size={16} 
+                color={selectedInstructions.includes(chip.id) ? Colors.white : Colors.primary} 
+              />
+              <Text style={[
+                styles.chipText,
+                selectedInstructions.includes(chip.id) && styles.chipTextSelected,
+              ]}>{chip.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
+        <TextInput
+          style={styles.textInput}
+          placeholder="Ajoutez des instructions particulières..."
+          placeholderTextColor={Colors.textTertiary}
+          value={specialNotes}
+          onChangeText={setSpecialNotes}
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+          maxLength={200}
+        />
+      </View>
+      
+      <View style={styles.stepFooter}>
+        <Button
+          title="Prendre une photo du colis"
+          onPress={handleTakePhoto}
+          style={styles.continueButton}
+        />
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      {console.log('📦 StandardFlow: Rendering main container')}
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       
-      {/* Header */}
+      {/* Custom Header with Back Button */}
       <View style={styles.header}>
-        {console.log('📦 StandardFlow: Rendering header')}
-        <TouchableOpacity style={styles.backButton} onPress={() => {
-          console.log('📦 StandardFlow: Back button pressed');
-          navigation.goBack();
-        }}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
+        
         <Text style={styles.headerTitle}>Standard Delivery</Text>
-        <View style={styles.placeholder} />
+        
+        <View style={styles.stepIndicator}>
+          <Text style={styles.stepCounter}>{currentStep}/2</Text>
+        </View>
       </View>
 
-      <ScrollView 
-        style={styles.content} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+      {/* Progress Indicator */}
+      <ProgressIndicator />
+
+      {/* Step Content - Full Screen */}
+      <Animated.View 
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
       >
-        {console.log('📦 StandardFlow: Rendering ScrollView content')}
-        
-        {/* Header Section */}
-        <Animated.View style={styles.headerSection} entering={FadeIn}>
-          <Text style={styles.stepTitle}>Standard Delivery</Text>
-          <Text style={styles.stepSubtitle}>
-            Choose your delivery preferences. We'll capture your package photo and take precise measurements for accurate pricing.
-          </Text>
-        </Animated.View>
-
-        {/* Delivery Time Window Selection */}
-        <Animated.View style={styles.section} entering={SlideInUp.delay(200)}>
-          {console.log('📦 StandardFlow: Rendering delivery window selection')}
-          <Text style={styles.sectionTitle}>🕐 Delivery Time Window</Text>
-          <Text style={styles.sectionSubtitle}>
-            Select your preferred delivery time for convenience
-          </Text>
-          
-          <View style={styles.windowList}>
-            {deliveryWindows.map((window, index) => {
-              console.log('📦 StandardFlow: Rendering delivery window:', window.id);
-              return (
-                <Animated.View
-                  key={window.id}
-                  entering={SlideInUp.delay(300 + index * 100)}
-                >
-                  <TouchableOpacity
-                    style={[
-                      styles.windowCard,
-                      selectedDeliveryWindow === window.id && styles.selectedWindowCard,
-                    ]}
-                    onPress={() => handleDeliveryWindowSelect(window.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.windowCardContent}>
-                      <View style={[
-                        styles.windowIcon,
-                        { backgroundColor: window.color + '15' },
-                        selectedDeliveryWindow === window.id && { backgroundColor: window.color },
-                      ]}>
-                        <MaterialIcons 
-                          name={window.icon as any} 
-                          size={24} 
-                          color={selectedDeliveryWindow === window.id ? Colors.white : window.color} 
-                        />
-                      </View>
-                      
-                      <View style={styles.windowInfo}>
-                        <Text style={[
-                          styles.windowTitle,
-                          selectedDeliveryWindow === window.id && styles.selectedWindowTitle,
-                        ]}>
-                          {window.title}
-                        </Text>
-                        <Text style={styles.windowTime}>{window.timeRange}</Text>
-                        <Text style={styles.windowDescription}>{window.description}</Text>
-                      </View>
-                      
-                      <View style={styles.windowPriceContainer}>
-                        <View style={[
-                          styles.radioButton,
-                          selectedDeliveryWindow === window.id && styles.radioSelected,
-                          { borderColor: window.color }
-                        ]}>
-                          {selectedDeliveryWindow === window.id && (
-                            <View style={[styles.radioInner, { backgroundColor: window.color }]} />
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
-          </View>
-        </Animated.View>
-
-        {/* Special Instructions */}
-        <Animated.View style={styles.section} entering={SlideInUp.delay(600)}>
-          {console.log('📦 StandardFlow: Rendering special instructions')}
-          <Text style={styles.sectionTitle}>📋 Delivery Instructions</Text>
-          <Text style={styles.sectionSubtitle}>
-            Select any special delivery requirements or preferences
-          </Text>
-          
-          <View style={styles.instructionsGrid}>
-            {instructionOptions.map((option, index) => {
-              console.log('📦 StandardFlow: Rendering instruction option:', option.id);
-              return (
-                <Animated.View 
-                  key={option.id}
-                  entering={SlideInUp.delay(700 + index * 50)}
-                  style={styles.instructionContainer}
-                >
-                  <TouchableOpacity 
-                    style={[
-                      styles.instructionChip,
-                      specialInstructions.includes(option.id) && styles.selectedChip
-                    ]}
-                    onPress={() => {
-                      console.log('📦 StandardFlow: Instruction clicked:', option.id);
-                      toggleInstruction(option.id);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[
-                      styles.chipIcon,
-                      specialInstructions.includes(option.id) && styles.selectedChipIcon
-                    ]}>
-                      <Ionicons 
-                        name={option.icon as any} 
-                        size={18} 
-                        color={specialInstructions.includes(option.id) ? Colors.white : Colors.primary} 
-                      />
-                    </View>
-                    <Text style={[
-                      styles.chipText, 
-                      specialInstructions.includes(option.id) && styles.selectedChipText
-                    ]}>
-                      {option.title}
-                    </Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
-          </View>
-
-          {/* Delivery Notes */}
-          <Animated.View entering={SlideInUp.delay(900)}>
-            <Text style={styles.notesLabel}>Additional Notes (Optional)</Text>
-            <TextInput
-              style={styles.notesInput}
-              value={deliveryNotes}
-              onChangeText={(text) => {
-                console.log('📦 StandardFlow: Delivery notes updated:', text.length, 'characters');
-                setDeliveryNotes(text);
-              }}
-              placeholder="Any specific delivery instructions, access codes, building numbers, or other important details..."
-              placeholderTextColor={Colors.textSecondary}
-              multiline
-              numberOfLines={3}
-              maxLength={300}
-            />
-            <Text style={styles.characterCount}>
-              {deliveryNotes.length}/300 characters
-            </Text>
-          </Animated.View>
-        </Animated.View>
-
-        {/* Delivery Information */}
-        <Animated.View style={styles.section} entering={SlideInUp.delay(1000)}>
-          <Text style={styles.sectionTitle}>📦 What's Next?</Text>
-          <View style={styles.processCard}>
-            <View style={styles.processStep}>
-              <View style={styles.processIcon}>
-                <Ionicons name="camera-outline" size={20} color={Colors.primary} />
-              </View>
-              <View style={styles.processInfo}>
-                <Text style={styles.processTitle}>1. Package Photo</Text>
-                <Text style={styles.processDescription}>Take a clear photo of your package</Text>
-              </View>
-            </View>
-            
-            <View style={styles.processStep}>
-              <View style={styles.processIcon}>
-                <Ionicons name="resize-outline" size={20} color={Colors.primary} />
-              </View>
-              <View style={styles.processInfo}>
-                <Text style={styles.processTitle}>2. AI Measurement</Text>
-                <Text style={styles.processDescription}>AI analyzes and measures your package</Text>
-              </View>
-            </View>
-            
-            <View style={styles.processStep}>
-              <View style={styles.processIcon}>
-                <Ionicons name="checkmark-circle-outline" size={20} color={Colors.primary} />
-              </View>
-              <View style={styles.processInfo}>
-                <Text style={styles.processTitle}>3. Price & Book</Text>
-                <Text style={styles.processDescription}>Get accurate pricing and book delivery</Text>
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-      </ScrollView>
-
-      {/* Continue Button */}
-      {console.log('📦 StandardFlow: Rendering footer with continue button')}
-      <Animated.View style={styles.footer} entering={FadeIn.delay(1100)}>
-        <View style={styles.footerContent}>
-          {selectedDeliveryWindow && (
-            <View style={styles.selectionSummary}>
-              <Text style={styles.summaryText}>
-                Selected: {deliveryWindows.find(window => window.id === selectedDeliveryWindow)?.title}
-              </Text>
-              <Text style={styles.summaryTime}>
-                {deliveryWindows.find(window => window.id === selectedDeliveryWindow)?.timeRange}
-              </Text>
-            </View>
-          )}
-          
-          <Animated.View style={buttonAnimatedStyle}>
-            <TouchableOpacity
-              style={[
-                styles.continueButton,
-                !selectedDeliveryWindow && styles.disabledButton
-              ]}
-              onPress={handleContinue}
-              disabled={!selectedDeliveryWindow}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.continueButtonText,
-                !selectedDeliveryWindow && styles.disabledButtonText
-              ]}>
-                Take Package Photo
-              </Text>
-              <Ionicons 
-                name="camera" 
-                size={20} 
-                color={!selectedDeliveryWindow ? Colors.textSecondary : Colors.white} 
-              />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+        {currentStep === 1 && <TimeWindowStep />}
+        {currentStep === 2 && <InstructionsStep />}
       </Animated.View>
     </View>
   );
@@ -397,333 +308,248 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    paddingTop: 50, // Account for status bar on iOS
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingVertical: 12,
     backgroundColor: Colors.background,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    zIndex: 1,
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.white,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.textPrimary,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
   },
-  placeholder: {
+  stepIndicator: {
     width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary + '15',
+  },
+  stepCounter: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    backgroundColor: Colors.background,
+  },
+  progressStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  progressDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border,
+  },
+  progressDotActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  progressDotCompleted: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  progressNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  progressNumberActive: {
+    color: Colors.white,
+  },
+  progressLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: Colors.border,
+    marginHorizontal: 8,
+  },
+  progressLineCompleted: {
+    backgroundColor: Colors.primary,
   },
   content: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
-  scrollContent: {
+  stepContainer: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingVertical: 16,
   },
-  headerSection: {
-    paddingTop: 24,
-    paddingBottom: 32,
+  stepHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
   stepTitle: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: 12,
-    lineHeight: 38,
+    marginBottom: 6,
+    textAlign: 'center',
   },
   stepSubtitle: {
     fontSize: 16,
     color: Colors.textSecondary,
-    lineHeight: 24,
+    textAlign: 'center',
+    lineHeight: 22,
   },
-  section: {
-    marginBottom: 40,
+  stepContent: {
+    flex: 1,
+    justifyContent: 'center',
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-    lineHeight: 28,
+  stepFooter: {
+    paddingTop: 20,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 24,
-    lineHeight: 20,
+  optionsGrid: {
+    gap: 12,
+    flex: 1,
+    justifyContent: 'center',
   },
-  windowList: {
-    gap: 16,
-  },
-  windowCard: {
+  optionCard: {
     backgroundColor: Colors.white,
-    borderRadius: 20,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: Colors.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    position: 'relative',
+    minHeight: 140,
+    justifyContent: 'center',
   },
-  selectedWindowCard: {
+  optionCardSelected: {
     borderColor: Colors.primary,
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    backgroundColor: Colors.primary + '08',
   },
-  windowCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
+  optionCardPopular: {
+    borderColor: Colors.primary,
   },
-  windowIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
+  popularBadge: {
+    position: 'absolute',
+    top: -6,
+    right: 12,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
-  windowInfo: {
-    flex: 1,
-    marginRight: 16,
+  popularText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.white,
   },
-  windowTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 4,
-    lineHeight: 22,
-  },
-  selectedWindowTitle: {
-    color: Colors.primary,
-  },
-  windowTime: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.primary,
-    marginBottom: 4,
-    lineHeight: 18,
-  },
-  windowDescription: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  windowPriceContainer: {
-    alignItems: 'flex-end',
-  },
-  radioButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: Colors.border,
-  },
-  radioSelected: {
-    borderWidth: 2,
-  },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  instructionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -6,
-  },
-  instructionContainer: {
-    width: '50%',
-    paddingHorizontal: 6,
+  optionIcon: {
     marginBottom: 12,
   },
-  instructionChip: {
+  optionName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  optionDuration: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  optionSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  optionPriceContainer: {
+    alignItems: 'center',
+  },
+  optionPrice: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+    textAlign: 'center',
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
     backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    minHeight: 56,
   },
-  selectedChip: {
+  chipSelected: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
-  },
-  chipIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  selectedChipIcon: {
-    backgroundColor: Colors.white + '20',
   },
   chipText: {
     fontSize: 14,
     color: Colors.textPrimary,
     fontWeight: '500',
-    flex: 1,
-    lineHeight: 18,
   },
-  selectedChipText: {
+  chipTextSelected: {
     color: Colors.white,
   },
-  notesLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 12,
-    marginTop: 24,
-  },
-  notesInput: {
+  textInput: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
+    fontSize: 16,
+    color: Colors.textPrimary,
     borderWidth: 1,
     borderColor: Colors.border,
-    fontSize: 14,
-    color: Colors.textPrimary,
-    minHeight: 100,
+    minHeight: 80,
+    marginTop: 16,
     textAlignVertical: 'top',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  characterCount: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textAlign: 'right',
-    marginTop: 8,
-  },
-  processCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  processStep: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  processIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  processInfo: {
-    flex: 1,
-  },
-  processTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  processDescription: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  footer: {
-    backgroundColor: Colors.white,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  footerContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  selectionSummary: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: Colors.primary + '10',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: Colors.textPrimary,
-    fontWeight: '500',
-  },
-  summaryTime: {
-    fontSize: 14,
-    color: Colors.primary,
-    fontWeight: '600',
   },
   continueButton: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 25,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  disabledButton: {
-    backgroundColor: Colors.surface,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  continueButtonText: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: '600',
-    marginRight: 12,
-  },
-  disabledButtonText: {
-    color: Colors.textSecondary,
+    marginBottom: 20,
   },
 });
 
-export default StandardFlow; 
+export default StandardFlow;

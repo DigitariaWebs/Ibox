@@ -15,6 +15,8 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  withDelay,
+  withSequence,
 } from 'react-native-reanimated';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '../../config/colors';
@@ -44,100 +46,102 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
     packagePhoto,
     measurements: passedMeasurements,
     deliveryWindow,
-    specialInstructions,
+    specialInstructions = [],
+    specialNotes,
     serviceType 
   } = route.params;
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [aiMeasurements, setAiMeasurements] = useState(null);
-  const [currentStep, setCurrentStep] = useState('Initializing measurement system...');
+  const [currentStep, setCurrentStep] = useState('Preparing analysis...');
   
   const buttonScale = useSharedValue(1);
   const analysisProgress = useSharedValue(0);
 
-  // Use passed measurements or generate AI measurements
+  // Simulate AI analysis of package photo
   useEffect(() => {
-    if (passedMeasurements) {
-      // Use manually entered measurements
-      setAiMeasurements(passedMeasurements);
-      setIsAnalyzing(false);
-    } else {
-      // Simulate AI analysis
-      console.log('📦 StandardOrderSummary: Starting AI analysis simulation');
-      
-      const analysisSteps = [
-        { delay: 700, progress: 0.12, status: 'Loading advanced measurement model...' },
-        { delay: 1400, progress: 0.25, status: 'Scanning package geometry...' },
-        { delay: 2100, progress: 0.4, status: 'Detecting surface boundaries...' },
-        { delay: 2800, progress: 0.55, status: 'Measuring depth and volume...' },
-        { delay: 3500, progress: 0.7, status: 'Analyzing material properties...' },
-        { delay: 4200, progress: 0.85, status: 'Cross-referencing dimensions...' },
-        { delay: 4900, progress: 1.0, status: 'Precision measurement complete!' },
-      ];
+    console.log('📦 StandardOrderSummary: Starting AI analysis simulation');
+    
+    // Simulate progressive AI analysis with more detailed steps
+    const analysisSteps = [
+      { delay: 800, progress: 0.1, status: 'Initializing AI vision model...' },
+      { delay: 1600, progress: 0.2, status: 'Detecting package edges and corners...' },
+      { delay: 2400, progress: 0.35, status: 'Analyzing surface textures...' },
+      { delay: 3200, progress: 0.5, status: 'Calculating precise dimensions...' },
+      { delay: 4000, progress: 0.65, status: 'Estimating material density...' },
+      { delay: 4800, progress: 0.8, status: 'Computing weight distribution...' },
+      { delay: 5600, progress: 0.9, status: 'Validating measurements...' },
+      { delay: 6400, progress: 1.0, status: 'Analysis complete!' },
+    ];
 
-      analysisSteps.forEach((step, index) => {
-        setTimeout(() => {
-          analysisProgress.value = withTiming(step.progress, { duration: 350 });
-          setCurrentStep(step.status);
+    analysisSteps.forEach((step, index) => {
+      setTimeout(() => {
+        analysisProgress.value = withTiming(step.progress, { duration: 400 });
+        setCurrentStep(step.status);
+        
+        if (index === analysisSteps.length - 1) {
+          // Generate random but realistic measurements
+          const measurements = generateAIMeasurements();
+          setAiMeasurements(measurements);
           
-          if (index === analysisSteps.length - 1) {
-            const measurements = generateAIMeasurements();
-            setAiMeasurements(measurements);
-            
-            setTimeout(() => {
-              setIsAnalyzing(false);
-            }, 700);
-          }
-        }, step.delay);
-      });
-    }
-  }, [passedMeasurements]);
+          setTimeout(() => {
+            setIsAnalyzing(false);
+          }, 800);
+        }
+      }, step.delay);
+    });
+  }, []);
 
   const generateAIMeasurements = () => {
-    // Generate realistic measurements for standard delivery
-    const baseRanges = {
-      width: [20, 50],
-      height: [15, 40],
-      depth: [10, 30],
-      weight: [1.0, 8.0]
+    // Generate realistic measurements based on standard package size
+    const baseSizes = {
+      'small': { w: [15, 25], h: [10, 20], d: [5, 15], weight: [0.5, 2.0] },
+      'medium': { w: [25, 40], h: [20, 35], d: [15, 25], weight: [1.5, 5.0] },
+      'large': { w: [40, 60], h: [30, 50], d: [25, 40], weight: [3.0, 10.0] },
     };
+    
+    const sizeKey = 'medium'; // Standard delivery typically medium size
+    const ranges = baseSizes[sizeKey];
     
     const randomInRange = (range) => Math.round((Math.random() * (range[1] - range[0]) + range[0]) * 10) / 10;
     
     return {
-      width: randomInRange(baseRanges.width),
-      height: randomInRange(baseRanges.height),
-      depth: randomInRange(baseRanges.depth),
-      weight: randomInRange(baseRanges.weight),
-      confidence: Math.round((Math.random() * 10 + 90) * 10) / 10, // 90-100% confidence
+      width: randomInRange(ranges.w),
+      height: randomInRange(ranges.h),
+      depth: randomInRange(ranges.d),
+      weight: randomInRange(ranges.weight),
+      confidence: Math.round((Math.random() * 15 + 85) * 10) / 10, // 85-100% confidence
     };
   };
 
-  // Calculate price based on measurements
+  // Calculate price based on measurements and delivery window
   const calculatePrice = () => {
-    if (!aiMeasurements) return { base: 0, size: 0, weight: 0, total: 0 };
+    if (!aiMeasurements) return { base: 0, size: 0, window: 0, instructions: 0, total: 0 };
     
     // Base price for standard delivery
-    let basePrice = 15;
+    let basePrice = 12;
     
     // Size calculation (volume-based)
     const volume = aiMeasurements.width * aiMeasurements.height * aiMeasurements.depth;
-    const sizeMultiplier = Math.max(1, Math.ceil(volume / 8000)); // Every 8000 cm³
-    const sizeAdjustment = (sizeMultiplier - 1) * 4;
+    const sizeMultiplier = Math.max(1, Math.ceil(volume / 6000)); // Every 6000 cm³
+    const sizeAdjustment = (sizeMultiplier - 1) * 3;
     
-    // Weight adjustment (more generous for standard)
-    const weightAdjustment = Math.max(0, (aiMeasurements.weight - 2) * 1.5);
+    // Weight adjustment
+    const weightAdjustment = Math.max(0, (aiMeasurements.weight - 1.5) * 2);
     
-    // Delivery window adjustment
-    const windowAdjustment = deliveryWindow === 'express' ? 8 : 0;
+    // Delivery window adjustment (no extra charge for standard)
+    const windowAdjustment = 0;
+    
+    // Special instructions fee
+    const instructionsFee = specialInstructions.length * 1.5;
     
     return {
       base: basePrice,
-      size: sizeAdjustment,
-      weight: weightAdjustment,
+      size: sizeAdjustment + weightAdjustment,
       window: windowAdjustment,
-      total: basePrice + sizeAdjustment + weightAdjustment + windowAdjustment
+      instructions: instructionsFee,
+      total: basePrice + sizeAdjustment + weightAdjustment + windowAdjustment + instructionsFee
     };
   };
 
@@ -151,6 +155,7 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
       buttonScale.value = withSpring(1, { duration: 200 });
     });
 
+    // Simulate processing
     setTimeout(() => {
       console.log('📦 StandardOrderSummary: Navigating to DriverSearch');
       navigation.navigate('DriverSearch', {
@@ -182,7 +187,7 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
         <View style={styles.analysisContent}>
           <Animated.View entering={FadeIn.delay(200)}>
             <View style={styles.aiIcon}>
-              <MaterialIcons name="photo-camera" size={48} color={Colors.primary} />
+              <MaterialIcons name="auto-awesome" size={48} color={Colors.primary} />
             </View>
           </Animated.View>
           
@@ -190,14 +195,14 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
             style={styles.analysisTitle}
             entering={SlideInUp.delay(400)}
           >
-            Measuring Package
+            AI Package Analysis
           </Animated.Text>
           
           <Animated.Text 
             style={styles.analysisSubtitle}
             entering={SlideInUp.delay(600)}
           >
-            AI is analyzing your package to calculate precise dimensions and pricing
+            Our AI is analyzing your package photo to determine optimal pricing
           </Animated.Text>
           
           {packagePhoto && (
@@ -207,12 +212,7 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
             >
               <Image source={{ uri: packagePhoto }} style={styles.packagePhoto} />
               <View style={styles.scanOverlay}>
-                <View style={styles.scanGrid}>
-                  <View style={styles.gridLine} />
-                  <View style={styles.gridLine} />
-                  <View style={[styles.gridLine, styles.gridLineVertical]} />
-                  <View style={[styles.gridLine, styles.gridLineVertical]} />
-                </View>
+                <View style={styles.scanLine} />
               </View>
             </Animated.View>
           )}
@@ -247,49 +247,54 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
             navigation.goBack();
           }}
         >
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Delivery Summary</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Standard Summary</Text>
+          <Text style={styles.headerSubtitle}>Review your delivery details</Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Package Analysis */}
+        {/* AI Analysis Results */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(100)}>
-          <Text style={styles.sectionTitle}>📏 Package Measurements</Text>
-          <View style={styles.measurementsCard}>
-            <View style={styles.photoSection}>
-              {packagePhoto && (
-                <Image source={{ uri: packagePhoto }} style={styles.thumbnailPhoto} />
-              )}
-              <View style={styles.measurementInfo}>
-                <Text style={styles.measurementTitle}>AI Measured Package</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="analytics" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>AI Analysis Results</Text>
+          </View>
+          <View style={styles.analysisCard}>
+            <View style={styles.analysisHeader}>
+              <View style={styles.aiIcon}>
+                <MaterialIcons name="auto-awesome" size={24} color={Colors.primary} />
+              </View>
+              <View style={styles.analysisInfo}>
+                <Text style={styles.analysisResultTitle}>Package Detected</Text>
                 <Text style={styles.confidenceText}>
-                  {aiMeasurements?.confidence || 95}% Accuracy
+                  {aiMeasurements?.confidence}% Confidence
                 </Text>
+              </View>
+              <View style={styles.confidenceBadge}>
+                <MaterialIcons name="check-circle" size={20} color={Colors.success} />
               </View>
             </View>
             
-            <View style={styles.dimensionsGrid}>
-              <View style={styles.dimensionCard}>
-                <Ionicons name="resize" size={20} color={Colors.primary} />
-                <Text style={styles.dimensionLabel}>Width</Text>
-                <Text style={styles.dimensionValue}>{aiMeasurements?.width} cm</Text>
+            <View style={styles.measurementsGrid}>
+              <View style={styles.measurementItem}>
+                <Text style={styles.measurementLabel}>Width</Text>
+                <Text style={styles.measurementValue}>{aiMeasurements?.width} cm</Text>
               </View>
-              <View style={styles.dimensionCard}>
-                <Ionicons name="resize" size={20} color={Colors.primary} />
-                <Text style={styles.dimensionLabel}>Height</Text>
-                <Text style={styles.dimensionValue}>{aiMeasurements?.height} cm</Text>
+              <View style={styles.measurementItem}>
+                <Text style={styles.measurementLabel}>Height</Text>
+                <Text style={styles.measurementValue}>{aiMeasurements?.height} cm</Text>
               </View>
-              <View style={styles.dimensionCard}>
-                <Ionicons name="resize" size={20} color={Colors.primary} />
-                <Text style={styles.dimensionLabel}>Depth</Text>
-                <Text style={styles.dimensionValue}>{aiMeasurements?.depth} cm</Text>
+              <View style={styles.measurementItem}>
+                <Text style={styles.measurementLabel}>Depth</Text>
+                <Text style={styles.measurementValue}>{aiMeasurements?.depth} cm</Text>
               </View>
-              <View style={styles.dimensionCard}>
-                <Ionicons name="scale" size={20} color={Colors.primary} />
-                <Text style={styles.dimensionLabel}>Weight</Text>
-                <Text style={styles.dimensionValue}>{aiMeasurements?.weight} kg</Text>
+              <View style={styles.measurementItem}>
+                <Text style={styles.measurementLabel}>Est. Weight</Text>
+                <Text style={styles.measurementValue}>{aiMeasurements?.weight} kg</Text>
               </View>
             </View>
           </View>
@@ -297,26 +302,32 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
 
         {/* Service Details */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(200)}>
-          <Text style={styles.sectionTitle}>📦 Standard Delivery</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="local-shipping" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Standard Details</Text>
+          </View>
           <View style={styles.serviceCard}>
             <View style={styles.serviceIcon}>
               <MaterialIcons name="local-shipping" size={24} color={Colors.primary} />
             </View>
             <View style={styles.serviceInfo}>
               <Text style={styles.serviceTitle}>Standard Delivery</Text>
-              <Text style={styles.serviceSubtitle}>Reliable & Affordable</Text>
-              <Text style={styles.serviceDescription}>Same-day or next-day delivery</Text>
+              <Text style={styles.serviceSubtitle}>{deliveryWindow?.title || 'Same Day'}</Text>
+              <Text style={styles.serviceDescription}>{deliveryWindow?.subtitle || 'Reliable delivery'}</Text>
             </View>
           </View>
         </Animated.View>
 
         {/* Route Information */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(300)}>
-          <Text style={styles.sectionTitle}>🗺️ Delivery Route</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="route" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Route</Text>
+          </View>
           <View style={styles.routeCard}>
             <View style={styles.routeItem}>
               <View style={styles.routeIconContainer}>
-                <Ionicons name="location" size={16} color={Colors.primary} />
+                <MaterialIcons name="my-location" size={16} color={Colors.primary} />
               </View>
               <View style={styles.routeInfo}>
                 <Text style={styles.routeLabel}>Pickup Location</Text>
@@ -328,7 +339,7 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
             
             <View style={styles.routeItem}>
               <View style={styles.routeIconContainer}>
-                <Ionicons name="flag" size={16} color={Colors.error} />
+                <MaterialIcons name="location-on" size={16} color={Colors.error} />
               </View>
               <View style={styles.routeInfo}>
                 <Text style={styles.routeLabel}>Delivery Address</Text>
@@ -339,18 +350,37 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
         </Animated.View>
 
         {/* Special Instructions */}
-        {specialInstructions && (
+        {specialInstructions.length > 0 && (
           <Animated.View style={styles.section} entering={SlideInUp.delay(400)}>
-            <Text style={styles.sectionTitle}>📝 Delivery Instructions</Text>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="assignment" size={20} color={Colors.primary} />
+              <Text style={styles.sectionTitle}>Special Instructions</Text>
+            </View>
             <View style={styles.instructionsCard}>
-              <Text style={styles.instructionsText}>{specialInstructions}</Text>
+              <View style={styles.instructionsList}>
+                {specialInstructions.map((instruction, index) => (
+                  <View key={index} style={styles.instructionItem}>
+                    <MaterialIcons name="check-circle" size={16} color={Colors.primary} />
+                    <Text style={styles.instructionText}>{instruction}</Text>
+                  </View>
+                ))}
+              </View>
+              {specialNotes && (
+                <View style={styles.notesSection}>
+                  <Text style={styles.notesLabel}>Additional Notes:</Text>
+                  <Text style={styles.notesText}>{specialNotes}</Text>
+                </View>
+              )}
             </View>
           </Animated.View>
         )}
 
         {/* Price Breakdown */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(500)}>
-          <Text style={styles.sectionTitle}>💰 Price Breakdown</Text>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="receipt" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Price Breakdown</Text>
+          </View>
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Base delivery</Text>
@@ -358,20 +388,14 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
             </View>
             {price.size > 0 && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Size adjustment</Text>
+                <Text style={styles.priceLabel}>Size & weight adjustment</Text>
                 <Text style={styles.priceValue}>${price.size.toFixed(2)}</Text>
               </View>
             )}
-            {price.weight > 0 && (
+            {price.instructions > 0 && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Weight adjustment</Text>
-                <Text style={styles.priceValue}>${price.weight.toFixed(2)}</Text>
-              </View>
-            )}
-            {price.window > 0 && (
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Express window</Text>
-                <Text style={styles.priceValue}>${price.window.toFixed(2)}</Text>
+                <Text style={styles.priceLabel}>Special handling</Text>
+                <Text style={styles.priceValue}>${price.instructions.toFixed(2)}</Text>
               </View>
             )}
             <View style={styles.priceDivider} />
@@ -382,22 +406,17 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
           </View>
         </Animated.View>
 
-        {/* Delivery Info */}
+        {/* Estimated Time */}
         <Animated.View style={styles.section} entering={SlideInUp.delay(600)}>
-          <View style={styles.deliveryCard}>
-            <View style={styles.deliveryInfo}>
-              <Ionicons name="time-outline" size={24} color={Colors.primary} />
-              <View style={styles.deliveryDetails}>
-                <Text style={styles.deliveryLabel}>Estimated Delivery</Text>
-                <Text style={styles.deliveryTime}>1-3 hours</Text>
-              </View>
+          <View style={styles.timeCard}>
+            <View style={styles.timeIconContainer}>
+              <MaterialIcons name="schedule" size={24} color={Colors.primary} />
             </View>
-            <View style={styles.deliveryInfo}>
-              <Ionicons name="shield-checkmark" size={24} color={Colors.success} />
-              <View style={styles.deliveryDetails}>
-                <Text style={styles.deliveryLabel}>Package Protection</Text>
-                <Text style={styles.deliveryTime}>Fully Insured</Text>
-              </View>
+            <View style={styles.timeInfo}>
+              <Text style={styles.timeLabel}>Estimated Delivery Time</Text>
+              <Text style={styles.timeValue}>
+                {deliveryWindow?.timeRange || '1-3 hours'}
+              </Text>
             </View>
           </View>
         </Animated.View>
@@ -422,7 +441,7 @@ const StandardOrderSummary: React.FC<StandardOrderSummaryProps> = ({
             ) : (
               <>
                 <Text style={styles.startButtonText}>Find Driver</Text>
-                <Ionicons name="arrow-forward" size={20} color="white" />
+                <MaterialIcons name="arrow-forward" size={20} color="white" />
               </>
             )}
           </TouchableOpacity>
@@ -490,20 +509,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scanGrid: {
+  scanLine: {
     width: '80%',
-    height: '80%',
-    position: 'relative',
-  },
-  gridLine: {
-    position: 'absolute',
+    height: 2,
     backgroundColor: Colors.primary,
-    opacity: 0.6,
-  },
-  gridLineVertical: {
-    width: 1,
-    height: '100%',
-    left: '33%',
+    opacity: 0.8,
   },
   progressContainer: {
     width: '100%',
@@ -547,24 +557,35 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
+    backgroundColor: Colors.background,
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
   },
   placeholder: {
     width: 44,
@@ -576,13 +597,18 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: 16,
   },
-  measurementsCard: {
+  analysisCard: {
     backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 20,
@@ -592,50 +618,44 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  photoSection: {
+  analysisHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  thumbnailPhoto: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    backgroundColor: Colors.surface,
-    marginRight: 16,
-  },
-  measurementInfo: {
+  analysisInfo: {
     flex: 1,
+    marginLeft: 12,
   },
-  measurementTitle: {
+  analysisResultTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: 4,
   },
   confidenceText: {
     fontSize: 14,
     color: Colors.success,
     fontWeight: '500',
   },
-  dimensionsGrid: {
+  confidenceBadge: {
+    marginLeft: 8,
+  },
+  measurementsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -8,
   },
-  dimensionCard: {
+  measurementItem: {
     width: '50%',
     paddingHorizontal: 8,
-    marginBottom: 16,
-    alignItems: 'center',
+    marginBottom: 12,
   },
-  dimensionLabel: {
+  measurementLabel: {
     fontSize: 14,
     color: Colors.textSecondary,
-    marginTop: 8,
     marginBottom: 4,
   },
-  dimensionValue: {
+  measurementValue: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.primary,
@@ -727,15 +747,39 @@ const styles = StyleSheet.create({
   },
   instructionsCard: {
     backgroundColor: Colors.white,
-    padding: 16,
     borderRadius: 16,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
-  instructionsText: {
+  instructionsList: {
+    marginBottom: 16,
+  },
+  instructionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  instructionText: {
+    fontSize: 16,
+    color: Colors.textPrimary,
+    marginLeft: 12,
+  },
+  notesSection: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: 16,
+  },
+  notesLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  notesText: {
     fontSize: 16,
     color: Colors.textPrimary,
     lineHeight: 24,
@@ -780,25 +824,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
   },
-  deliveryCard: {
-    backgroundColor: `${Colors.primary}10`,
-    borderRadius: 16,
-    padding: 20,
-  },
-  deliveryInfo: {
+  timeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: Colors.primary + '10',
+    padding: 16,
+    borderRadius: 12,
   },
-  deliveryDetails: {
+  timeIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timeInfo: {
+    flex: 1,
     marginLeft: 16,
   },
-  deliveryLabel: {
+  timeLabel: {
     fontSize: 14,
     color: Colors.textSecondary,
     marginBottom: 4,
   },
-  deliveryTime: {
+  timeValue: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.primary,
@@ -842,4 +892,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StandardOrderSummary; 
+export default StandardOrderSummary;
