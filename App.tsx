@@ -51,6 +51,13 @@ import OrderSummaryScreen from './src/screens/OrderSummaryScreen';
 import DriverSearchScreen from './src/screens/DriverSearchScreen';
 import DriverFoundScreen from './src/screens/DriverFoundScreen';
 
+// Driver Quick Action Screens
+import EarningsHistoryScreen from './src/screens/EarningsHistoryScreen';
+import DeliveryHistoryScreen from './src/screens/DeliveryHistoryScreen';
+import VehicleInfoScreen from './src/screens/VehicleInfoScreen';
+import PreferredRoutesScreen from './src/screens/PreferredRoutesScreen';
+import DriverSupportScreen from './src/screens/DriverSupportScreen';
+
 // Service Flow Screens
 import ExpressFlow from './src/screens/flows/ExpressFlow';
 import StandardFlow from './src/screens/flows/StandardFlow';
@@ -399,6 +406,13 @@ const MainNavigator: React.FC = () => {
             headerShown: false,
           }}
         />
+        
+        {/* Driver Quick Action Screens */}
+        <Stack.Screen name="EarningsHistory" component={EarningsHistoryScreen} />
+        <Stack.Screen name="DeliveryHistory" component={DeliveryHistoryScreen} />
+        <Stack.Screen name="VehicleInfo" component={VehicleInfoScreen} />
+        <Stack.Screen name="PreferredRoutes" component={PreferredRoutesScreen} />
+        <Stack.Screen name="DriverSupport" component={DriverSupportScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

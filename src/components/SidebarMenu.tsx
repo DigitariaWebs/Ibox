@@ -223,7 +223,14 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
           style={styles.header}
           entering={FadeIn.delay(100)}
         >
-          <View style={styles.profileSection}>
+          <TouchableOpacity 
+            style={styles.profileSection}
+            onPress={() => {
+              onNavigate('Profile');
+              onClose();
+            }}
+            activeOpacity={0.7}
+          >
             <View style={styles.avatarContainer}>
               <Text style={styles.avatarText}>JD</Text>
             </View>
@@ -231,11 +238,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({
               <Text style={styles.profileName}>John Doe</Text>
               <Text style={styles.profileEmail}>john.doe@ibox.com</Text>
             </View>
-          </View>
-          
-          {/* Close Button */}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={22} color={Colors.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -347,16 +350,16 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 24,
     paddingHorizontal: 24,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
     backgroundColor: Colors.surface,
     borderBottomWidth: 0,
   },
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
   },
   avatarContainer: {
     width: 48,
@@ -391,19 +394,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     fontWeight: '500',
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.borderLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   menuContainer: {
     flex: 1,

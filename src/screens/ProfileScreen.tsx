@@ -1,6 +1,5 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store/store';
+import { useAuth } from '../contexts/AuthContext';
 import ClientProfileScreen from './ClientProfileScreen';
 import DriverProfileScreen from './DriverProfileScreen';
 
@@ -9,10 +8,10 @@ interface ProfileScreenProps {
 }
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
-  const userType = useSelector((state: RootState) => state.user.accountType);
+  const { user } = useAuth();
   
-  // Determine which profile screen to show based on user type
-  if (userType === 'transporter' || userType === 'driver') {
+  // Determine which profile screen to show based on user type from auth context
+  if (user?.userType === 'transporter' || user?.userType === 'driver') {
     return <DriverProfileScreen navigation={navigation} />;
   }
   

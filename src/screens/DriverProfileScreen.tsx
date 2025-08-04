@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Text, Icon } from '../ui';
 import { Colors } from '../config/colors';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +28,9 @@ const DriverProfileScreen: React.FC<DriverProfileScreenProps> = ({ navigation })
   const [instantBooking, setInstantBooking] = useState(true);
   const [weekendAvailability, setWeekendAvailability] = useState(false);
   const [nightDeliveries, setNightDeliveries] = useState(false);
+  
+  // Get auth functions
+  const { logout } = useAuth();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -73,6 +77,13 @@ const DriverProfileScreen: React.FC<DriverProfileScreenProps> = ({ navigation })
       action: () => navigation.navigate('EarningsHistory'),
     },
     {
+      id: 'delivery-history',
+      title: 'Delivery History',
+      icon: 'clock',
+      color: '#F97316',
+      action: () => navigation.navigate('DeliveryHistory'),
+    },
+    {
       id: 'vehicle',
       title: 'Vehicle Info',
       icon: 'truck',
@@ -115,12 +126,16 @@ const DriverProfileScreen: React.FC<DriverProfileScreenProps> = ({ navigation })
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: () => {
-            console.log('Driver logged out');
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Auth' }],
-            });
+          onPress: async () => {
+            try {
+              console.log('🔄 Starting driver logout process...');
+              await logout();
+              console.log('✅ Driver logged out successfully from profile dashboard');
+              // Navigation will be handled automatically by App.tsx based on auth state change
+            } catch (error) {
+              console.error('❌ Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           },
         },
       ]
@@ -150,22 +165,11 @@ const DriverProfileScreen: React.FC<DriverProfileScreenProps> = ({ navigation })
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E293B" />
-
-      {/* Header with Gradient */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="chevron-left" type="Feather" size={28} color={Colors.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Driver Dashboard</Text>
-        <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
-          <Icon name="settings" type="Feather" size={22} color={Colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1E293B" translucent={false} />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Driver Profile Header */}
+        {/* Driver Profile Header with embedded header */}
         <Animated.View
           style={[
             styles.profileHeader,
@@ -175,6 +179,14 @@ const DriverProfileScreen: React.FC<DriverProfileScreenProps> = ({ navigation })
             }
           ]}
         >
+          {/* Header inside hero section */}
+          <View style={styles.embeddedHeader}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <Icon name="chevron-left" type="Feather" size={28} color={Colors.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Driver Dashboard</Text>
+            <View style={styles.headerSpacer} />
+          </View>
           <View style={styles.driverCard}>
             <View style={styles.driverLeft}>
               <View style={styles.driverImageContainer}>
@@ -368,6 +380,23 @@ const DriverProfileScreen: React.FC<DriverProfileScreenProps> = ({ navigation })
           </View>
         </Animated.View>
 
+        {/* Settings Button */}
+        <Animated.View
+          style={[
+            styles.settingsButtonSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }
+          ]}
+        >
+          <TouchableOpacity style={styles.settingsMainButton} onPress={() => navigation.navigate('Settings')}>
+            <Icon name="settings" type="Feather" size={20} color={Colors.textSecondary} />
+            <Text style={styles.settingsButtonText}>Settings</Text>
+            <Icon name="chevron-right" type="Feather" size={20} color={Colors.textSecondary} />
+          </TouchableOpacity>
+        </Animated.View>
+
         {/* Logout Button */}
         <Animated.View
           style={[
@@ -378,31 +407,32 @@ const DriverProfileScreen: React.FC<DriverProfileScreenProps> = ({ navigation })
             }
           ]}
         >
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+            activeOpacity={0.8}
+          >
             <Icon name="log-out" type="Feather" size={20} color="#EF4444" />
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#1E293B',
   },
-  header: {
-    backgroundColor: Colors.surface,
+  embeddedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    paddingTop: Platform.OS === 'ios' ? 12 : 20,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
+    paddingBottom: 20,
   },
   backButton: {
     paddingVertical: 8,
@@ -411,25 +441,27 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.textPrimary,
+    color: Colors.white,
+    flex: 1,
+    textAlign: 'center',
   },
-  settingsButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+  headerSpacer: {
+    width: 36,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: Colors.surface,
   },
   profileHeader: {
     backgroundColor: '#1E293B',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 30,
   },
   driverCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 16,
+    paddingHorizontal: 20,
   },
   driverLeft: {
     flexDirection: 'row',
@@ -518,6 +550,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#334155',
     borderRadius: 12,
     padding: 16,
+    marginHorizontal: 20,
   },
   toggleLabel: {
     fontSize: 16,
@@ -729,6 +762,24 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1E293B',
     marginLeft: 12,
+  },
+  settingsButtonSection: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  settingsMainButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  settingsButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.textPrimary,
+    flex: 1,
   },
   logoutSection: {
     paddingHorizontal: 20,

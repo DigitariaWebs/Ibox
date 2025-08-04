@@ -9,7 +9,8 @@ import {
   Animated,
   Alert,
   Switch,
-  ImageBackground,
+  Platform,
+  Linking,
   Dimensions,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
@@ -28,24 +29,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { logout, user } = useAuth();
   const dispatch = useDispatch();
   const userData = useSelector((state: RootState) => state.user);
-  const accountType = useSelector((state: RootState) => state.user.accountType);
   
-  const [darkMode, setDarkMode] = useState(false);
+  // Settings states
   const [pushNotifications, setPushNotifications] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [smsNotifications, setSmsNotifications] = useState(false);
   const [locationServices, setLocationServices] = useState(true);
-  const [emailMarketing, setEmailMarketing] = useState(false);
-  
-  // Preference states
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [locationEnabled, setLocationEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [autoBackup, setAutoBackup] = useState(true);
+  const [biometricAuth, setBiometricAuth] = useState(false);
+  const [dataSync, setDataSync] = useState(true);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const headerOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -63,106 +60,128 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     ]).start();
   }, []);
 
-  // Personal Account User Stats
-  const personalUserStats = [
-    { label: 'Commandes', value: '47', icon: 'package', color: '#0AA5A8' },
-    { label: 'Points', value: '1,250', icon: 'star', color: '#F59E0B' },
-  ];
-
-  // Business Account User Stats
-  const businessUserStats = [
-    { label: 'Expéditions', value: '156', icon: 'truck', color: '#0AA5A8' },
-    { label: 'Équipe', value: '8', icon: 'users', color: '#10B981' },
-    { label: 'Revenus', value: '$12,450', icon: 'dollar-sign', color: '#F59E0B' },
-  ];
-
-  // Get user stats based on account type
-  const userStats = accountType === 'business' ? businessUserStats : personalUserStats;
-
+  // Account and Profile options
   const accountOptions = [
     {
       id: 'personal-info',
-      title: 'Informations personnelles',
-      subtitle: 'Nom, email, téléphone',
+      title: 'Personal Information',
+      subtitle: 'Name, email, phone number',
       icon: 'user',
       color: '#0AA5A8',
       action: () => navigation.navigate('PersonalInfo'),
     },
     {
       id: 'addresses',
-      title: 'Adresses',
-      subtitle: '3 adresses enregistrées',
+      title: 'My Addresses',
+      subtitle: 'Saved delivery locations',
       icon: 'map-pin',
       color: '#3B82F6',
       action: () => navigation.navigate('Addresses'),
     },
     {
       id: 'payment-methods',
-      title: 'Moyens de paiement',
-      subtitle: '2 cartes enregistrées',
+      title: 'Payment Methods',
+      subtitle: 'Cards and payment options',
       icon: 'credit-card',
       color: '#8B5CF6',
       action: () => navigation.navigate('PaymentMethods'),
     },
     {
       id: 'order-history',
-      title: accountType === 'business' ? 'Historique des expéditions' : 'Historique des commandes',
-      subtitle: accountType === 'business' ? 'Voir toutes vos expéditions' : 'Voir toutes vos commandes',
+      title: 'Order History',
+      subtitle: 'View your past deliveries',
       icon: 'clock',
       color: '#F97316',
       action: () => navigation.navigate('OrderHistory'),
     },
   ];
 
-  // Business-specific options
-  const businessOptions = [
-    {
-      id: 'team-management',
-      title: 'Gestion d\'équipe',
-      subtitle: '8 membres actifs',
-      icon: 'users',
-      color: '#10B981',
-      action: () => navigation.navigate('TeamManagement'),
-    },
-    {
-      id: 'business-analytics',
-      title: 'Analytics Business',
-      subtitle: 'Rapports et statistiques',
-      icon: 'bar-chart',
-      color: '#3B82F6',
-      action: () => navigation.navigate('BusinessAnalytics'),
-    },
-    {
-      id: 'invoicing',
-      title: 'Facturation',
-      subtitle: 'Gestion des factures',
-      icon: 'file-text',
-      color: '#F59E0B',
-      action: () => navigation.navigate('Invoicing'),
-    },
-  ];
-
-  const appOptions = [
+  // App preferences options
+  const preferenceOptions = [
     {
       id: 'language',
-      title: 'Langue',
-      subtitle: 'Français',
+      title: 'Language',
+      subtitle: 'English',
       icon: 'globe',
       color: '#0AA5A8',
       action: () => navigation.navigate('LanguageSelection'),
     },
     {
+      id: 'currency',
+      title: 'Currency',
+      subtitle: 'CAD - Canadian Dollar',
+      icon: 'dollar-sign',
+      color: '#10B981',
+      action: () => console.log('Currency settings'),
+    },
+    {
+      id: 'theme',
+      title: 'App Theme',
+      subtitle: 'Light mode',
+      icon: 'sun',
+      color: '#F59E0B',
+      action: () => console.log('Theme settings'),
+    },
+  ];
+
+  // Privacy and Security options
+  const privacyOptions = [
+    {
+      id: 'privacy-policy',
+      title: 'Privacy Policy',
+      subtitle: 'How we handle your data',
+      icon: 'shield',
+      color: '#8B5CF6',
+      action: () => Linking.openURL('https://ibox.com/privacy'),
+    },
+    {
+      id: 'terms',
+      title: 'Terms of Service',
+      subtitle: 'Our terms and conditions',
+      icon: 'file-text',
+      color: '#3B82F6',
+      action: () => Linking.openURL('https://ibox.com/terms'),
+    },
+    {
+      id: 'data-export',
+      title: 'Export My Data',
+      subtitle: 'Download your personal data',
+      icon: 'download',
+      color: '#6B7280',
+      action: () => console.log('Export data'),
+    },
+  ];
+
+  // Support and Information options
+  const supportOptions = [
+    {
       id: 'help',
-      title: 'Aide et support',
-      subtitle: 'FAQ, contact, assistance',
+      title: 'Help Center',
+      subtitle: 'FAQ and support articles',
       icon: 'help-circle',
       color: '#F59E0B',
       action: () => navigation.navigate('HelpSupport'),
     },
     {
+      id: 'contact',
+      title: 'Contact Support',
+      subtitle: 'Get help from our team',
+      icon: 'message-circle',
+      color: '#10B981',
+      action: () => navigation.navigate('HelpSupport'),
+    },
+    {
+      id: 'feedback',
+      title: 'Send Feedback',
+      subtitle: 'Help us improve the app',
+      icon: 'star',
+      color: '#F59E0B',
+      action: () => console.log('Send feedback'),
+    },
+    {
       id: 'about',
-      title: 'À propos',
-      subtitle: 'Version 1.2.0',
+      title: 'About iBox',
+      subtitle: 'Version 2.1.0',
       icon: 'info',
       color: '#6B7280',
       action: () => navigation.navigate('About'),
@@ -173,25 +192,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     if (userData.firstName) {
       return `${userData.firstName} ${userData.lastName}`.trim();
     }
-    return accountType === 'business' ? 'Entreprise' : 'Utilisateur';
+    return user?.userType === 'business' ? 'Business User' : 'Customer';
   };
 
   const getAccountTypeLabel = () => {
-    return accountType === 'business' ? 'Compte Business' : 'Compte Personnel';
+    return user?.userType === 'business' ? 'Business Account' : 'Personal Account';
   };
 
   const getLoginMethodLabel = () => {
     switch (userData.loginMethod) {
       case 'facebook':
-        return 'Connecté via Facebook';
+        return 'Connected via Facebook';
       case 'apple':
-        return 'Connecté via Apple';
+        return 'Connected via Apple';
       case 'google':
-        return 'Connecté via Google';
+        return 'Connected via Google';
       case 'email':
-        return 'Connecté par email';
+        return 'Connected via Email';
       default:
-        return 'Connecté';
+        return 'Connected';
     }
   };
 
@@ -221,12 +240,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Supprimer le compte',
-      'Cette action est irréversible. Toutes vos données seront supprimées.',
+      'Delete Account',
+      'This action is irreversible. All your data will be deleted.',
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: 'Delete',
           style: 'destructive',
           onPress: () => {
             console.log('Account deletion requested');
@@ -299,85 +318,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <View style={styles.headerRight} />
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={styles.headerSpacer} />
         </Animated.View>
 
-        {/* Profile Card */}
-        <Animated.View
-          style={[
-            styles.profileCard,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <View style={styles.profileHeader}>
-            <View style={styles.profileImageContainer}>
-              <ImageBackground
-                source={{ uri: 'https://i.pravatar.cc/100?img=2' }}
-                style={styles.profileImage}
-                imageStyle={styles.profileImageStyle}
-              >
-                <TouchableOpacity style={styles.cameraButton}>
-                  <Icon name="camera" type="Feather" size={16} color={Colors.white} />
-                </TouchableOpacity>
-              </ImageBackground>
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName} numberOfLines={1} ellipsizeMode="tail">
-                {getDisplayName()}
-              </Text>
-              <Text style={styles.profileEmail} numberOfLines={1} ellipsizeMode="tail">
-                {userData.email}
-              </Text>
-              <View style={styles.profileBadges}>
-                <View style={styles.accountTypeBadge}>
-                  <Icon 
-                    name={accountType === 'business' ? 'briefcase' : 'user'} 
-                    type="Feather" 
-                    size={10} 
-                    color={Colors.primary} 
-                  />
-                  <Text style={styles.accountTypeText} numberOfLines={1}>
-                    {accountType === 'business' ? 'Business' : 'Personnel'}
-                  </Text>
-                </View>
-                <View style={styles.loginMethodBadge}>
-                  <Text style={styles.loginMethodText} numberOfLines={1}>
-                    {userData.loginMethod ? userData.loginMethod.charAt(0).toUpperCase() + userData.loginMethod.slice(1) : 'App'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* User Stats */}
-        <Animated.View
-          style={[
-            styles.statsSection,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <View style={styles.statsContainer}>
-            {userStats.map((stat, index) => (
-              <View key={index} style={styles.statCard}>
-                <View style={[styles.statIcon, { backgroundColor: stat.color + '15' }]}>
-                  <Icon name={stat.icon as any} type="Feather" size={18} color={stat.color} />
-                </View>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Account Management */}
+        {/* Account Section */}
         <Animated.View
           style={[
             styles.section,
@@ -387,7 +332,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             },
           ]}
         >
-          <Text style={styles.sectionTitle}>Gestion du compte</Text>
+          <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.sectionContent}>
             {accountOptions.map((option) => (
               <ProfileOption key={option.id} option={option} />
@@ -395,27 +340,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           </View>
         </Animated.View>
 
-        {/* Business-specific Section */}
-        {accountType === 'business' && (
-          <Animated.View
-            style={[
-              styles.section,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <Text style={styles.sectionTitle}>Gestion Business</Text>
-            <View style={styles.sectionContent}>
-              {businessOptions.map((option) => (
-                <ProfileOption key={option.id} option={option} />
-              ))}
-            </View>
-          </Animated.View>
-        )}
-
-        {/* Smart Preferences */}
+        {/* Preferences Section */}
         <Animated.View
           style={[
             styles.section,
@@ -425,44 +350,62 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             },
           ]}
         >
-          <Text style={styles.sectionTitle}>Préférences</Text>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          <View style={styles.sectionContent}>
+            {preferenceOptions.map((option) => (
+              <ProfileOption key={option.id} option={option} />
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Notifications Section */}
+        <Animated.View
+          style={[
+            styles.section,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.sectionTitle}>Notifications</Text>
           <View style={styles.sectionContent}>
             <ToggleOption
-              title="Notifications"
-              subtitle="Recevoir les notifications push"
+              title="Push Notifications"
+              subtitle="Receive order updates and alerts"
               icon="bell"
               color="#0AA5A8"
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              value={pushNotifications}
+              onValueChange={setPushNotifications}
             />
             <ToggleOption
-              title="Localisation"
-              subtitle="Utiliser ma position actuelle"
-              icon="map-pin"
-              color="#3B82F6"
-              value={locationEnabled}
-              onValueChange={setLocationEnabled}
-            />
-            <ToggleOption
-              title="Mode sombre"
-              subtitle="Interface sombre"
-              icon="moon"
-              color="#8B5CF6"
-              value={darkModeEnabled}
-              onValueChange={setDarkModeEnabled}
-            />
-            <ToggleOption
-              title="Notifications email"
-              subtitle="Recevoir les emails"
+              title="Email Notifications"
+              subtitle="Receive delivery confirmations"
               icon="mail"
               color="#F59E0B"
               value={emailNotifications}
               onValueChange={setEmailNotifications}
             />
+            <ToggleOption
+              title="SMS Notifications"
+              subtitle="Delivery updates via SMS"
+              icon="message-square"
+              color="#3B82F6"
+              value={smsNotifications}
+              onValueChange={setSmsNotifications}
+            />
+            <ToggleOption
+              title="Location Services"
+              subtitle="Use current location for deliveries"
+              icon="map-pin"
+              color="#8B5CF6"
+              value={locationServices}
+              onValueChange={setLocationServices}
+            />
           </View>
         </Animated.View>
 
-        {/* App Settings */}
+        {/* Privacy & Security Section */}
         <Animated.View
           style={[
             styles.section,
@@ -472,9 +415,51 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             },
           ]}
         >
-          <Text style={styles.sectionTitle}>Application</Text>
+          <Text style={styles.sectionTitle}>Privacy & Security</Text>
           <View style={styles.sectionContent}>
-            {appOptions.map((option) => (
+            {privacyOptions.map((option) => (
+              <ProfileOption key={option.id} option={option} />
+            ))}
+            <ToggleOption
+              title="Dark Mode"
+              subtitle="Switch to dark interface"
+              icon="moon"
+              color="#6B7280"
+              value={darkMode}
+              onValueChange={setDarkMode}
+            />
+            <ToggleOption
+              title="Biometric Authentication"
+              subtitle="Use Touch ID or Face ID"
+              icon="shield"
+              color="#8B5CF6"
+              value={biometricAuth}
+              onValueChange={setBiometricAuth}
+            />
+            <ToggleOption
+              title="Auto Backup"
+              subtitle="Backup data automatically"
+              icon="hard-drive"
+              color="#10B981"
+              value={autoBackup}
+              onValueChange={setAutoBackup}
+            />
+          </View>
+        </Animated.View>
+
+        {/* Support Section */}
+        <Animated.View
+          style={[
+            styles.section,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.sectionTitle}>Support</Text>
+          <View style={styles.sectionContent}>
+            {supportOptions.map((option) => (
               <ProfileOption key={option.id} option={option} />
             ))}
           </View>
@@ -491,15 +476,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             },
           ]}
         >
-          <Text style={styles.sectionTitle}>Zone dangereuse</Text>
+          <Text style={styles.sectionTitle}>Account Actions</Text>
           <View style={styles.sectionContent}>
             <TouchableOpacity style={styles.dangerOption} onPress={handleLogout}>
               <View style={styles.dangerIcon}>
                 <Icon name="log-out" type="Feather" size={20} color="#EF4444" />
               </View>
               <View style={styles.optionContent}>
-                <Text style={styles.dangerTitle}>Déconnexion</Text>
-                <Text style={styles.dangerSubtitle}>Se déconnecter de l'application</Text>
+                <Text style={styles.dangerTitle}>Sign Out</Text>
+                <Text style={styles.dangerSubtitle}>Sign out from the app</Text>
               </View>
             </TouchableOpacity>
             
@@ -508,8 +493,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                 <Icon name="trash-2" type="Feather" size={20} color="#EF4444" />
               </View>
               <View style={styles.optionContent}>
-                <Text style={styles.dangerTitle}>Supprimer le compte</Text>
-                <Text style={styles.dangerSubtitle}>Action irréversible</Text>
+                <Text style={styles.dangerTitle}>Delete Account</Text>
+                <Text style={styles.dangerSubtitle}>Irreversible action</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -551,13 +536,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textPrimary,
   },
-  headerRight: {
+  headerSpacer: {
     width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
