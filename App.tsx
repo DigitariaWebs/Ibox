@@ -19,7 +19,7 @@ import LoadingScreen from './src/LoadingScreen';
 import OnboardingScreen from './src/OnboardingScreen';
 import LoginScreen from './src/LoginScreen';
 import HomeScreen from './src/HomeScreen';
-import ProfileScreen from './src/ProfileScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 import TransporterHomeScreen from './src/screens/TransporterHomeScreen';
 import DriverModeScreen from './src/screens/DriverModeScreen';
 import SettingsScreen from './src/SettingsScreen';

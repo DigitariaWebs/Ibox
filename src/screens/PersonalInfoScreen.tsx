@@ -1,19 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
-  ScrollView,
-  Animated,
+  TextInput,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ImageBackground,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { Text, Icon, Input, Button } from '../ui';
+import { Text, Icon } from '../ui';
 import { Colors } from '../config/colors';
 import { RootState, setUserData } from '../store/store';
 
@@ -21,380 +22,342 @@ interface PersonalInfoScreenProps {
   navigation: any;
 }
 
-interface FormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  postalCode: string;
-  dateOfBirth: string;
-}
-
-interface FormErrors {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  postalCode?: string;
-  dateOfBirth?: string;
-}
-
 const PersonalInfoScreen: React.FC<PersonalInfoScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch();
   const userData = useSelector((state: RootState) => state.user.userData);
   const accountType = useSelector((state: RootState) => state.user.accountType);
 
-  const [formData, setFormData] = useState<FormData>({
-    firstName: userData.firstName || '',
-    lastName: userData.lastName || '',
-    email: userData.email || '',
-    phone: '+1 (514) 555-0123',
-    address: '1234 Rue Sainte-Catherine',
-    city: 'Montréal',
-    postalCode: 'H3G 1M8',
-    dateOfBirth: '1990-05-15',
-  });
-
-  const [errors, setErrors] = useState<FormErrors>({});
+  // Simple state - no complex objects
+  const [firstName, setFirstName] = useState(userData.firstName || '');
+  const [lastName, setLastName] = useState(userData.lastName || '');
+  const [email, setEmail] = useState(userData.email || '');
+  const [phone, setPhone] = useState('+1 (514) 555-0123');
+  const [address, setAddress] = useState('1234 Rue Sainte-Catherine');
+  const [city, setCity] = useState('Montreal');
+  const [postalCode, setPostalCode] = useState('H3G 1M8');
+  const [dateOfBirth, setDateOfBirth] = useState('1990-05-15');
+  
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    // First name validation
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'Le prénom est requis';
-    } else if (formData.firstName.trim().length < 2) {
-      newErrors.firstName = 'Le prénom doit contenir au moins 2 caractères';
-    }
-
-    // Last name validation
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Le nom est requis';
-    } else if (formData.lastName.trim().length < 2) {
-      newErrors.lastName = 'Le nom doit contenir au moins 2 caractères';
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email.trim()) {
-      newErrors.email = 'L\'email est requis';
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Format d\'email invalide';
-    }
-
-    // Phone validation
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Le téléphone est requis';
-    } else if (!phoneRegex.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
-      newErrors.phone = 'Format de téléphone invalide';
-    }
-
-    // Address validation
-    if (!formData.address.trim()) {
-      newErrors.address = 'L\'adresse est requise';
-    }
-
-    // City validation
-    if (!formData.city.trim()) {
-      newErrors.city = 'La ville est requise';
-    }
-
-    // Postal code validation (Canadian format)
-    const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
-    if (!formData.postalCode.trim()) {
-      newErrors.postalCode = 'Le code postal est requis';
-    } else if (!postalCodeRegex.test(formData.postalCode)) {
-      newErrors.postalCode = 'Format de code postal invalide (ex: H3G 1M8)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setHasChanges(true);
-    
-    // Clear error for this field when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
 
   const handleSave = async () => {
-    if (!validateForm()) {
-      Alert.alert('Erreur', 'Veuillez corriger les erreurs dans le formulaire');
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
     setIsLoading(true);
-
+    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Update Redux store with new user data
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       dispatch(setUserData({
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        email: formData.email.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
         loginMethod: userData.loginMethod,
         accountType: accountType,
       }));
 
-      setHasChanges(false);
-      setIsLoading(false);
-
-      Alert.alert(
-        'Succès',
-        'Vos informations ont été mises à jour avec succès!',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      Alert.alert('Success', 'Information saved successfully!', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
     } catch (error) {
+      Alert.alert('Error', 'Failed to save information');
+    } finally {
       setIsLoading(false);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de la sauvegarde');
     }
   };
 
-  const handleCancel = () => {
-    if (hasChanges) {
-      Alert.alert(
-        'Annuler les modifications',
-        'Vous avez des modifications non sauvegardées. Êtes-vous sûr de vouloir annuler?',
-        [
-          { text: 'Continuer l\'édition', style: 'cancel' },
-          { text: 'Annuler', style: 'destructive', onPress: () => navigation.goBack() },
-        ]
-      );
-    } else {
-      navigation.goBack();
-    }
+  const formatDisplayDate = (dateString: string) => {
+    if (!dateString) return 'Select your birth date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const DatePickerModal = () => {
+    const [tempDate, setTempDate] = useState(new Date(dateOfBirth || '1990-01-01'));
+    
+    const years = Array.from({length: 80}, (_, i) => new Date().getFullYear() - 18 - i);
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const days = Array.from({length: 31}, (_, i) => i + 1);
+
+    const handleDateSelect = () => {
+      const formattedDate = tempDate.toLocaleDateString('en-CA');
+      setDateOfBirth(formattedDate);
+      setShowDatePicker(false);
+    };
+    
+    return (
+      <Modal
+        visible={showDatePicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Date of Birth</Text>
+              <TouchableOpacity onPress={handleDateSelect}>
+                <Text style={styles.modalDoneText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.datePickerContainer}>
+              <View style={styles.dateColumn}>
+                <Text style={styles.dateColumnTitle}>Month</Text>
+                <ScrollView style={styles.dateScrollView} showsVerticalScrollIndicator={false}>
+                  {months.map((month, index) => (
+                    <TouchableOpacity
+                      key={`month-${index}`}
+                      style={[
+                        styles.dateOption,
+                        tempDate.getMonth() === index && styles.selectedDateOption
+                      ]}
+                      onPress={() => setTempDate(new Date(tempDate.getFullYear(), index, tempDate.getDate()))}
+                    >
+                      <Text style={[
+                        styles.dateOptionText,
+                        tempDate.getMonth() === index && styles.selectedDateOptionText
+                      ]}>
+                        {month}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              
+              <View style={styles.dateColumn}>
+                <Text style={styles.dateColumnTitle}>Day</Text>
+                <ScrollView style={styles.dateScrollView} showsVerticalScrollIndicator={false}>
+                  {days.map(day => (
+                    <TouchableOpacity
+                      key={`day-${day}`}
+                      style={[
+                        styles.dateOption,
+                        tempDate.getDate() === day && styles.selectedDateOption
+                      ]}
+                      onPress={() => setTempDate(new Date(tempDate.getFullYear(), tempDate.getMonth(), day))}
+                    >
+                      <Text style={[
+                        styles.dateOptionText,
+                        tempDate.getDate() === day && styles.selectedDateOptionText
+                      ]}>
+                        {day}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              
+              <View style={styles.dateColumn}>
+                <Text style={styles.dateColumnTitle}>Year</Text>
+                <ScrollView style={styles.dateScrollView} showsVerticalScrollIndicator={false}>
+                  {years.map(year => (
+                    <TouchableOpacity
+                      key={`year-${year}`}
+                      style={[
+                        styles.dateOption,
+                        tempDate.getFullYear() === year && styles.selectedDateOption
+                      ]}
+                      onPress={() => setTempDate(new Date(year, tempDate.getMonth(), tempDate.getDate()))}
+                    >
+                      <Text style={[
+                        styles.dateOptionText,
+                        tempDate.getFullYear() === year && styles.selectedDateOptionText
+                      ]}>
+                        {year}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
       
       <KeyboardAvoidingView 
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <TouchableOpacity style={styles.backButton} onPress={handleCancel}>
-            <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Icon name="chevron-left" type="Feather" size={28} color={Colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Informations personnelles</Text>
-          <TouchableOpacity 
-            style={[styles.saveButton, !hasChanges && styles.saveButtonDisabled]} 
-            onPress={handleSave}
-            disabled={!hasChanges || isLoading}
-          >
-            <Text style={[styles.saveButtonText, !hasChanges && styles.saveButtonTextDisabled]}>
-              Sauvegarder
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+          <Text style={styles.headerTitle}>Personal Information</Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Profile Picture Section */}
-          <Animated.View
-            style={[
-              styles.profileSection,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <View style={styles.profileImageContainer}>
-              <ImageBackground
-                source={{ uri: 'https://i.pravatar.cc/120?img=2' }}
-                style={styles.profileImage}
-                imageStyle={styles.profileImageStyle}
-              >
-                <TouchableOpacity style={styles.editImageButton}>
-                  <Icon name="camera" type="Feather" size={18} color={Colors.white} />
-                </TouchableOpacity>
-              </ImageBackground>
-            </View>
-            <Text style={styles.profileImageText}>Modifier la photo</Text>
-          </Animated.View>
+        {/* Profile Header */}
+        <View style={styles.profileHeader}>
+          <View style={styles.profileImageContainer}>
+            <ImageBackground
+              source={{ uri: 'https://i.pravatar.cc/120?img=2' }}
+              style={styles.profileImage}
+              imageStyle={styles.profileImageStyle}
+            >
+              <TouchableOpacity style={styles.editImageButton}>
+                <Icon name="camera" type="Feather" size={14} color={Colors.white} />
+              </TouchableOpacity>
+            </ImageBackground>
+          </View>
+          <View style={styles.headerInfo}>
+            <Text style={styles.profileTitle}>Complete Your Profile</Text>
+            <Text style={styles.profileSubtitle}>Update your personal information</Text>
+          </View>
+        </View>
 
-          {/* Personal Information Form */}
-          <Animated.View
-            style={[
-              styles.formSection,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <Text style={styles.sectionTitle}>Informations de base</Text>
+        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+          {/* Personal Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Personal Details</Text>
             
-            <View style={styles.formRow}>
-              <View style={styles.formHalf}>
-                <Input
-                  label="Prénom"
-                  value={formData.firstName}
-                  onChangeText={(value) => handleInputChange('firstName', value)}
-                  error={errors.firstName}
-                  placeholder="Votre prénom"
-                  leftIcon={<Icon name="user" type="Feather" size={20} color={Colors.textSecondary} />}
+            <View style={styles.nameRow}>
+              <View style={styles.nameField}>
+                <Text style={styles.inputLabel}>First Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="John"
+                  placeholderTextColor={Colors.textTertiary}
                 />
               </View>
-              <View style={styles.formHalf}>
-                <Input
-                  label="Nom"
-                  value={formData.lastName}
-                  onChangeText={(value) => handleInputChange('lastName', value)}
-                  error={errors.lastName}
-                  placeholder="Votre nom"
+              <View style={styles.nameField}>
+                <Text style={styles.inputLabel}>Last Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Doe"
+                  placeholderTextColor={Colors.textTertiary}
                 />
               </View>
             </View>
 
-            <Input
-              label="Email"
-              value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
-              error={errors.email}
-              placeholder="votre.email@exemple.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              leftIcon={<Icon name="mail" type="Feather" size={20} color={Colors.textSecondary} />}
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <TextInput
+                style={styles.textInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="john.doe@example.com"
+                placeholderTextColor={Colors.textTertiary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-            <Input
-              label="Téléphone"
-              value={formData.phone}
-              onChangeText={(value) => handleInputChange('phone', value)}
-              error={errors.phone}
-              placeholder="+1 (514) 555-0123"
-              keyboardType="phone-pad"
-              leftIcon={<Icon name="phone" type="Feather" size={20} color={Colors.textSecondary} />}
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Phone Number</Text>
+              <TextInput
+                style={styles.textInput}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="+1 (514) 555-0123"
+                placeholderTextColor={Colors.textTertiary}
+                keyboardType="phone-pad"
+              />
+            </View>
+          </View>
 
-            <Input
-              label="Date de naissance"
-              value={formData.dateOfBirth}
-              onChangeText={(value) => handleInputChange('dateOfBirth', value)}
-              error={errors.dateOfBirth}
-              placeholder="YYYY-MM-DD"
-              leftIcon={<Icon name="calendar" type="Feather" size={20} color={Colors.textSecondary} />}
-            />
-          </Animated.View>
-
-          {/* Address Information */}
-          <Animated.View
-            style={[
-              styles.formSection,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <Text style={styles.sectionTitle}>Adresse</Text>
+          {/* Address Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Address Information</Text>
             
-            <Input
-              label="Adresse"
-              value={formData.address}
-              onChangeText={(value) => handleInputChange('address', value)}
-              error={errors.address}
-              placeholder="1234 Rue de la Montagne"
-              leftIcon={<Icon name="map-pin" type="Feather" size={20} color={Colors.textSecondary} />}
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Street Address</Text>
+              <TextInput
+                style={styles.textInput}
+                value={address}
+                onChangeText={setAddress}
+                placeholder="1234 Main Street"
+                placeholderTextColor={Colors.textTertiary}
+              />
+            </View>
 
-            <View style={styles.formRow}>
-              <View style={styles.formThird}>
-                <Input
-                  label="Ville"
-                  value={formData.city}
-                  onChangeText={(value) => handleInputChange('city', value)}
-                  error={errors.city}
-                  placeholder="Montréal"
+            <View style={styles.addressRow}>
+              <View style={styles.cityField}>
+                <Text style={styles.inputLabel}>City</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={city}
+                  onChangeText={setCity}
+                  placeholder="Montreal"
+                  placeholderTextColor={Colors.textTertiary}
                 />
               </View>
-              <View style={styles.formThird}>
-                <Input
-                  label="Code postal"
-                  value={formData.postalCode}
-                  onChangeText={(value) => handleInputChange('postalCode', value)}
-                  error={errors.postalCode}
+              <View style={styles.postalField}>
+                <Text style={styles.inputLabel}>Postal Code</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={postalCode}
+                  onChangeText={setPostalCode}
                   placeholder="H3G 1M8"
+                  placeholderTextColor={Colors.textTertiary}
                   autoCapitalize="characters"
+                  maxLength={7}
                 />
               </View>
             </View>
-          </Animated.View>
+          </View>
 
-          {/* Save Button */}
-          <Animated.View
-            style={[
-              styles.buttonSection,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <Button
-              title={isLoading ? "Sauvegarde..." : "Sauvegarder les modifications"}
-              onPress={handleSave}
-              variant="primary"
-              disabled={!hasChanges || isLoading}
-              loading={isLoading}
-              icon={<Icon name="save" type="Feather" size={20} color={Colors.white} />}
-              style={[styles.saveButtonLarge, (!hasChanges || isLoading) && styles.saveButtonDisabledLarge]}
-            />
+          {/* Additional Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Additional Information</Text>
             
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>Annuler</Text>
-            </TouchableOpacity>
-          </Animated.View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Date of Birth</Text>
+              <TouchableOpacity 
+                style={styles.datePickerButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.datePickerText}>
+                  {formatDisplayDate(dateOfBirth)}
+                </Text>
+                <Icon name="calendar" type="Feather" size={20} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </ScrollView>
+
+        {/* Save Button */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={isLoading}
+          >
+            <Text style={styles.saveButtonText}>
+              {isLoading ? 'Saving...' : 'Save Information'}
+            </Text>
+            {!isLoading && (
+              <Icon name="check" type="Feather" size={20} color={Colors.white} />
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
+      
+      <DatePickerModal />
     </SafeAreaView>
   );
 };
@@ -402,144 +365,251 @@ const PersonalInfoScreen: React.FC<PersonalInfoScreenProps> = ({ navigation }) =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.surface,
   },
   keyboardView: {
     flex: 1,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
+    paddingTop: Platform.OS === 'ios' ? 12 : 20,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
-    backgroundColor: Colors.white,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: Colors.textPrimary,
-    flex: 1,
     textAlign: 'center',
-    marginHorizontal: 16,
-  },
-  saveButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.primary,
-  },
-  saveButtonDisabled: {
-    backgroundColor: Colors.textSecondary,
-  },
-  saveButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  saveButtonTextDisabled: {
-    color: Colors.textSecondary,
-  },
-  scrollView: {
     flex: 1,
   },
-  profileSection: {
+  headerSpacer: {
+    width: 28,
+  },
+  profileHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 32,
     paddingHorizontal: 20,
+    paddingVertical: 20,
     backgroundColor: Colors.white,
-    marginBottom: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: 12,
+    marginRight: 16,
   },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.textSecondary,
   },
   profileImageStyle: {
-    borderRadius: 60,
+    borderRadius: 30,
   },
   editImageButton: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: Colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  profileImageText: {
-    fontSize: 14,
-    color: Colors.primary,
+  headerInfo: {
+    flex: 1,
+  },
+  profileTitle: {
+    fontSize: 18,
     fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 4,
   },
-  formSection: {
+  profileSubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  formContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  section: {
     backgroundColor: Colors.white,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    marginBottom: 16,
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  formRow: {
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.textPrimary,
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: Colors.textPrimary,
+    minHeight: 48,
+  },
+  nameRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
+    marginBottom: 16,
   },
-  formHalf: {
+  nameField: {
     flex: 1,
   },
-  formThird: {
+  addressRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  cityField: {
+    flex: 2,
+  },
+  postalField: {
     flex: 1,
   },
-  buttonSection: {
+  datePickerButton: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: Colors.textPrimary,
+  },
+  actionContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    backgroundColor: Colors.white,
-    marginBottom: 20,
+    paddingVertical: 16,
+    paddingBottom: 34,
+    backgroundColor: Colors.surface,
   },
-  saveButtonLarge: {
+  saveButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  saveButtonDisabled: {
+    backgroundColor: Colors.textTertiary,
+  },
+  saveButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.white,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.border,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  modalCancelText: {
+    fontSize: 17,
+    color: Colors.textSecondary,
+  },
+  modalDoneText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  datePickerContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    minHeight: 300,
+  },
+  dateColumn: {
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  dateColumnTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    textAlign: 'center',
     marginBottom: 12,
   },
-  saveButtonDisabledLarge: {
-    backgroundColor: Colors.textSecondary,
+  dateScrollView: {
+    maxHeight: 200,
   },
-  cancelButton: {
-    alignItems: 'center',
+  dateOption: {
     paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+    marginBottom: 4,
   },
-  cancelButtonText: {
+  selectedDateOption: {
+    backgroundColor: Colors.primary,
+  },
+  dateOptionText: {
     fontSize: 16,
-    color: Colors.textSecondary,
+    color: Colors.textPrimary,
+  },
+  selectedDateOptionText: {
+    color: Colors.white,
     fontWeight: '600',
   },
 });
 
-export default PersonalInfoScreen; 
+export default PersonalInfoScreen;

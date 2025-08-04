@@ -477,7 +477,7 @@ const TransporterHomeScreen: React.FC<any> = ({ navigation }) => {
   };
 
   const handleProfilePress = () => {
-    navigation.navigate('Settings');
+    navigation.navigate('Profile');
   };
 
   return (

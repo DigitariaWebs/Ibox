@@ -355,7 +355,7 @@ const AddressesScreen: React.FC<AddressesScreenProps> = ({ navigation }) => {
         ]}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                      <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
+          <Icon name="chevron-left" type="Feather" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mes adresses</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleAddAddress}>
@@ -573,7 +573,7 @@ const AddressesScreen: React.FC<AddressesScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8F9FA',
   },
   header: {
     flexDirection: 'row',
@@ -581,19 +581,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     backgroundColor: Colors.white,
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.textPrimary,
     flex: 1,
@@ -603,10 +601,10 @@ const styles = StyleSheet.create({
   addButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: Colors.primary + '10',
   },
   scrollView: {
     flex: 1,
@@ -617,16 +615,10 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    marginHorizontal: 20,
   },
   statsNumber: {
     fontSize: 28,
@@ -644,16 +636,10 @@ const styles = StyleSheet.create({
   },
   addressCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    marginHorizontal: 20,
   },
   addressHeader: {
     flexDirection: 'row',
@@ -667,9 +653,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addressTypeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -678,8 +664,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addressLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
     color: Colors.textPrimary,
     marginBottom: 2,
   },
@@ -702,10 +688,10 @@ const styles = StyleSheet.create({
   actionButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8F9FA',
   },
   addressContent: {
     marginBottom: 12,
@@ -775,7 +761,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8F9FA',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -783,19 +769,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     backgroundColor: Colors.white,
   },
   modalBackButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.textPrimary,
     flex: 1,
@@ -805,7 +789,7 @@ const styles = StyleSheet.create({
   modalSaveButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 8,
     backgroundColor: Colors.primary,
   },
   modalSaveButtonDisabled: {
@@ -825,12 +809,14 @@ const styles = StyleSheet.create({
   modalSection: {
     backgroundColor: Colors.white,
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    marginBottom: 16,
+    paddingVertical: 20,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 12,
   },
   modalSectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: Colors.textPrimary,
     marginBottom: 16,
   },
