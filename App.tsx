@@ -18,6 +18,8 @@ import { RootState } from './src/store/store';
 import LoadingScreen from './src/LoadingScreen';
 import OnboardingScreen from './src/OnboardingScreen';
 import LoginScreen from './src/LoginScreen';
+import PhoneLoginScreen from './src/screens/PhoneLoginScreen';
+import PhoneOTPScreen from './src/screens/PhoneOTPScreen';
 import HomeScreen from './src/HomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import TransporterHomeScreen from './src/screens/TransporterHomeScreen';
@@ -57,6 +59,7 @@ import DeliveryHistoryScreen from './src/screens/DeliveryHistoryScreen';
 import VehicleInfoScreen from './src/screens/VehicleInfoScreen';
 import PreferredRoutesScreen from './src/screens/PreferredRoutesScreen';
 import DriverSupportScreen from './src/screens/DriverSupportScreen';
+import WebSocketTestScreen from './src/screens/WebSocketTestScreen';
 
 // Service Flow Screens
 import ExpressFlow from './src/screens/flows/ExpressFlow';
@@ -76,6 +79,9 @@ import StorageSubscriptionSuccessScreen from './src/screens/flows/StorageSubscri
 // Auth Context
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import AuthLoadingScreen from './src/screens/AuthLoadingScreen';
+
+// WebSocket Context
+import { WebSocketProvider } from './src/contexts/WebSocketContext';
 
 // Import store and actions
 import { increment, decrement, incrementByAmount } from './src/store/store';
@@ -222,6 +228,8 @@ const MainNavigator: React.FC = () => {
         <Stack.Screen name="AuthSelection" component={AuthSelectionScreen} />
         <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="PhoneLogin" component={PhoneLoginScreen} />
+        <Stack.Screen name="PhoneOTP" component={PhoneOTPScreen} />
         
         {/* Main App Screens */}
         <Stack.Screen name="HomeScreen" component={HomeScreen} />
@@ -413,6 +421,7 @@ const MainNavigator: React.FC = () => {
         <Stack.Screen name="VehicleInfo" component={VehicleInfoScreen} />
         <Stack.Screen name="PreferredRoutes" component={PreferredRoutesScreen} />
         <Stack.Screen name="DriverSupport" component={DriverSupportScreen} />
+        <Stack.Screen name="WebSocketTest" component={WebSocketTestScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -429,9 +438,11 @@ export default function App() {
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <AuthProvider>
-          <SignUpProvider>
-            <MainNavigator />
-          </SignUpProvider>
+          <WebSocketProvider>
+            <SignUpProvider>
+              <MainNavigator />
+            </SignUpProvider>
+          </WebSocketProvider>
         </AuthProvider>
       </PersistGate>
     </Provider>

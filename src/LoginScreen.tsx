@@ -12,11 +12,14 @@ import {
 import { Text, Input, Button, Icon } from './ui';
 import { Colors } from './config/colors';
 import { useAuth } from './contexts/AuthContext';
+import { signInWithGoogle } from './services/googleAuth';
 
 const LoginScreen: React.FC<any> = ({ navigation }) => {
-  const { login } = useAuth();
+  const { signInWithEmailAndPassword, signInWithGoogleCredential } = useAuth();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleBackPress = () => {
     if (navigation && navigation.goBack) {
@@ -24,35 +27,28 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
     }
   };
 
-  const handleEmailContinue = async () => {
+  const handleEmailLogin = async () => {
     if (!email.trim()) {
       Alert.alert('Email Required', 'Please enter your email address.');
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert('Password Required', 'Please enter your password.');
       return;
     }
 
     setIsLoading(true);
     
     try {
-      // Simulate login - in real app this would call your auth API
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-      
-      // Mock user data - replace with actual API response
-      const userData = {
-        id: 'user_123',
-        email: email.trim(),
-        firstName: 'John',
-        lastName: 'Doe',
-        phone: '+1 (555) 123-4567',
-      };
-
-      await login(userData, 'customer'); // Email login defaults to customer
-      
-      // Navigation will happen automatically via AuthContext state change
+      await signInWithEmailAndPassword(email.trim(), password);
       console.log('✅ Login successful for:', email);
+      // Navigation will happen automatically via AuthContext state change
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Login error:', error);
-      Alert.alert('Login Failed', 'Please check your credentials and try again.');
+      const errorMessage = error.message || 'Please check your credentials and try again.';
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -62,28 +58,33 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
     setIsLoading(true);
     
     try {
-      // Simulate social login - in real app this would integrate with social providers
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (provider === 'google') {
+        // Implement Google sign-in
+        const googleResult = await signInWithGoogle();
+        
+        if (googleResult.error) {
+          Alert.alert('Google Sign-In Failed', googleResult.error);
+          return;
+        }
+        
+        if (googleResult.id_token) {
+          // Sign in with Firebase using the Google ID token
+          await signInWithGoogleCredential(googleResult.id_token);
+          console.log('✅ Google sign-in successful');
+          // Navigation will be handled automatically by AuthContext
+        } else {
+          Alert.alert('Google Sign-In Failed', 'No ID token received from Google.');
+        }
+      } else {
+        // For Facebook and Apple, show placeholder for now
+        Alert.alert(`${provider} Sign-In`, `${provider} sign-in is not yet implemented. Please use email/password or Google for now.`);
+        return;
+      }
       
-      // Mock user data from social provider
-      const userData = {
-        id: `${provider}_user_123`,
-        email: `user@${provider}.com`,
-        firstName: 'Social',
-        lastName: 'User',
-      };
-
-      // Determine user type based on provider
-      const userType = provider === 'facebook' ? 'transporter' : 'customer';
-      
-      await login(userData, userType);
-      console.log('✅ Social login successful with:', provider, 'as', userType);
-      
-      // Navigation will now be handled automatically by AuthContext based on userType
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Social login error:', error);
-      Alert.alert('Login Failed', `Failed to login with ${provider}. Please try again.`);
+      const errorMessage = error.message || `Failed to login with ${provider}. Please try again.`;
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -113,10 +114,13 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
           <View style={styles.content}>
             {/* Title */}
             <Text variant="h1" weight="bold" style={styles.title}>
-              What email did you use?
+              Welcome back
+            </Text>
+            <Text style={styles.subtitle}>
+              Sign in to your account
             </Text>
 
-            {/* Email Input */}
+            {/* Login Form */}
             <View style={styles.inputContainer}>
               <Input
                 placeholder="Enter your email address"
@@ -129,15 +133,35 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
                 leftIcon={<Icon name="mail" type="Feather" size={20} color={Colors.textSecondary} />}
               />
               
-              {email.trim() && (
-                <Button
-                  title="Continue"
-                  onPress={handleEmailContinue}
-                  variant="primary"
-                  style={styles.continueButton}
-                  loading={isLoading}
-                />
-              )}
+              <Input
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.passwordInput}
+                leftIcon={<Icon name="lock" type="Feather" size={20} color={Colors.textSecondary} />}
+                rightIcon={
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                    <Icon 
+                      name={showPassword ? "eye-off" : "eye"} 
+                      type="Feather" 
+                      size={20} 
+                      color={Colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                }
+              />
+              
+              <Button
+                title={isLoading ? "Signing in..." : "Sign In"}
+                onPress={handleEmailLogin}
+                variant="primary"
+                style={styles.continueButton}
+                loading={isLoading}
+                disabled={!email.trim() || !password.trim()}
+              />
             </View>
 
             {/* Divider */}
@@ -233,14 +257,23 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     color: Colors.textPrimary,
-    marginBottom: 40,
+    marginBottom: 8,
     lineHeight: 34,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginBottom: 40,
+    textAlign: 'left',
   },
   inputContainer: {
     marginBottom: 32,
   },
   emailInput: {
     marginBottom: 16,
+  },
+  passwordInput: {
+    marginBottom: 24,
   },
   continueButton: {
     marginTop: 8,

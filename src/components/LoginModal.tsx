@@ -37,10 +37,13 @@ interface LoginModalProps {
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation }) => {
-  const { login } = useAuth();
+  const { signInWithEmailAndPassword } = useAuth();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isEmailFocused, setIsEmailFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const translateY = useSharedValue(MODAL_HEIGHT);
   const opacity = useSharedValue(0);
@@ -95,31 +98,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, navigation })
     handleClose();
   };
 
-  const handleEmailContinue = async () => {
-    if (email.trim()) {
-      setIsLoading(true);
-      console.log('Continue with email:', email);
-      
-      try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Create user data for AuthContext
-        const userData = {
-          id: `email_user_${Date.now()}`,
-          email: email.trim(),
-          firstName: 'Email',
-          lastName: 'User',
-        };
-
-              await login(userData, 'customer'); // Email login defaults to customer
-      console.log('✅ Email login successful for:', email);
-      handleSuccessfulLogin();
-      } catch (error) {
-        console.error('❌ Email login error:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  const handleEmailContinue = () => {
+    // Close modal and navigate to LoginScreen for proper email/password login
+    onClose();
+    if (navigation) {
+      navigation.navigate('Login');
     }
   };
 

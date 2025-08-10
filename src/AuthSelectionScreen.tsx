@@ -103,6 +103,14 @@ const AuthSelectionScreen: React.FC<AuthSelectionScreenProps> = ({
             style={styles.secondaryButton}
             icon={<Icon name="log-in" type="Feather" size={22} color={Colors.primary} />}
           />
+          
+          <Button
+            title="Log in with Phone"
+            onPress={() => navigation?.navigate('PhoneLogin')}
+            variant="outline"
+            style={styles.phoneButton}
+            icon={<Icon name="phone" type="Feather" size={22} color={Colors.primary} />}
+          />
         </View>
         
         {/* Bottom Section */}
@@ -187,6 +195,13 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderRadius: 28,
     minHeight: 56,
+  },
+  phoneButton: {
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 28,
+    minHeight: 56,
+    backgroundColor: 'transparent',
   },
   bottomSection: {
     flexDirection: 'row',

@@ -11,6 +11,7 @@ import {
 import { Button, Text, Icon } from '../../ui';
 import { Colors } from '../../config/colors';
 import { useSignUp } from '../../contexts/SignUpContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { confirmationSchema } from '../../validation/signUpSchemas';
 
 interface ConfirmationScreenProps {
@@ -19,6 +20,7 @@ interface ConfirmationScreenProps {
 
 const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ navigation }) => {
   const { signUpData, resetSignUpData } = useSignUp();
+  const { registerWithEmailAndPassword, completeOnboarding } = useAuth();
   
   const [confirmAll, setConfirmAll] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,11 +31,29 @@ const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ navigation }) =
       return;
     }
 
+    if (!signUpData.email || !signUpData.password || !signUpData.firstName || !signUpData.lastName) {
+      Alert.alert('Missing Information', 'Please ensure all required information is provided.');
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create Firebase user account
+      const user = await registerWithEmailAndPassword(
+        signUpData.email,
+        signUpData.password,
+        signUpData.firstName,
+        signUpData.lastName
+      );
+      
+      console.log('✅ User account created:', user.email);
+      
+      // Mark onboarding as completed
+      await completeOnboarding();
+      
+      // Clear sign-up data
+      resetSignUpData();
       
       // Show success message
       Alert.alert(
@@ -43,18 +63,17 @@ const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ navigation }) =
           {
             text: 'Get Started',
             onPress: () => {
-              resetSignUpData();
-              // Navigate to appropriate home screen based on account type
-              const homeScreen = signUpData.accountType === 'transporter' 
-                ? 'TransporterHomeScreen' 
-                : 'HomeScreen';
-              navigation.navigate(homeScreen);
+              // Navigation will be handled automatically by AuthContext state change
+              console.log('🎉 Registration complete, AuthContext will handle navigation');
             }
           }
         ]
       );
-    } catch (error) {
-      Alert.alert('Registration Failed', 'Something went wrong. Please try again.');
+      
+    } catch (error: any) {
+      console.error('❌ Registration error:', error);
+      const errorMessage = error.message || 'Something went wrong. Please try again.';
+      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setIsSubmitting(false);
     }

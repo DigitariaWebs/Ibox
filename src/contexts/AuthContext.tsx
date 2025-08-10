@@ -1,5 +1,22 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { useDispatch } from 'react-redux';
+import { setUserData, logout as logoutRedux } from '../store/store';
+import { auth } from '../config/firebaseConfig';
+import { 
+  signInWithEmail,
+  registerWithEmail,
+  sendPhoneVerificationCode,
+  verifyPhoneCode,
+  signInWithGoogle,
+  signOutUser,
+  mapFirebaseUserToAuthUser,
+  AuthUser,
+  AuthError
+} from '../services/firebaseAuth';
+import { ConfirmationResult, ApplicationVerifier } from 'firebase/auth';
+import * as AuthSession from 'expo-auth-session';
 
 interface User {
   id: string;
@@ -8,6 +25,7 @@ interface User {
   lastName: string;
   phone?: string;
   userType?: 'customer' | 'transporter';
+  displayName?: string;
 }
 
 interface AuthContextType {
@@ -19,6 +37,12 @@ interface AuthContextType {
   logout: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   skipOnboarding: () => Promise<void>;
+  // Firebase auth methods
+  signInWithEmailAndPassword: (email: string, password: string) => Promise<User>;
+  registerWithEmailAndPassword: (email: string, password: string, firstName: string, lastName: string) => Promise<User>;
+  sendPhoneOTP: (phoneNumber: string, recaptchaVerifier: ApplicationVerifier) => Promise<ConfirmationResult>;
+  verifyPhoneOTP: (confirmationResult: ConfirmationResult, code: string) => Promise<User>;
+  signInWithGoogleCredential: (idToken: string) => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,46 +58,91 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useDispatch();
 
-  // Load cached auth state on app start
+  // Firebase auth state listener
   useEffect(() => {
-    loadAuthState();
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      try {
+        if (firebaseUser) {
+          // User is signed in - convert Firebase user to our User format
+          const authUser = mapFirebaseUserToAuthUser(firebaseUser);
+          
+          // Check if we have cached user data with userType
+          const cachedUserData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+          let userType: 'customer' | 'transporter' = 'customer';
+          
+          if (cachedUserData) {
+            const parsed = JSON.parse(cachedUserData);
+            userType = parsed.userType || 'customer';
+          }
+          
+          const userWithType: User = {
+            ...authUser,
+            userType,
+          };
+          
+          setUser(userWithType);
+          setIsAuthenticated(true);
+          
+          // Cache the user data
+          await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userWithType));
+          await AsyncStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, 'true');
+          
+          // Sync with Redux store
+          dispatch(setUserData({
+            firstName: userWithType.firstName,
+            lastName: userWithType.lastName,
+            email: userWithType.email,
+            loginMethod: 'email', // Default, could be improved to track actual method
+            accountType: userWithType.userType === 'customer' ? 'personal' : 'business',
+          }));
+          
+          console.log('🔐 Firebase user authenticated:', userWithType.email);
+        } else {
+          // User is signed out
+          setUser(null);
+          setIsAuthenticated(false);
+          await AsyncStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED);
+          await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+          
+          // Sync with Redux store
+          dispatch(logoutRedux());
+          
+          console.log('🚪 Firebase user signed out');
+        }
+      } catch (error) {
+        console.error('❌ Error in auth state change:', error);
+      }
+    });
+
+    // Load onboarding state
+    loadOnboardingState();
+
+    return unsubscribe;
   }, []);
 
-  const loadAuthState = async () => {
+  // Load cached onboarding state on app start
+  useEffect(() => {
+    loadOnboardingState();
+  }, []);
+
+  const loadOnboardingState = async () => {
     try {
       setIsLoading(true);
       
-      const [
-        cachedIsAuthenticated,
-        cachedHasCompletedOnboarding,
-        cachedUserData,
-      ] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED),
-        AsyncStorage.getItem(STORAGE_KEYS.HAS_COMPLETED_ONBOARDING),
-        AsyncStorage.getItem(STORAGE_KEYS.USER_DATA),
-      ]);
-
-      if (cachedIsAuthenticated === 'true') {
-        setIsAuthenticated(true);
-        
-        if (cachedUserData) {
-          setUser(JSON.parse(cachedUserData));
-        }
-      }
-
+      const cachedHasCompletedOnboarding = await AsyncStorage.getItem(STORAGE_KEYS.HAS_COMPLETED_ONBOARDING);
+      
       if (cachedHasCompletedOnboarding === 'true') {
         setHasCompletedOnboarding(true);
       }
 
-      console.log('🔐 Auth state loaded:', {
-        isAuthenticated: cachedIsAuthenticated === 'true',
+      console.log('🔐 Onboarding state loaded:', {
         hasCompletedOnboarding: cachedHasCompletedOnboarding === 'true',
-        hasUserData: !!cachedUserData,
       });
 
     } catch (error) {
-      console.error('❌ Error loading auth state:', error);
+      console.error('❌ Error loading onboarding state:', error);
     } finally {
       setIsLoading(false);
     }
@@ -103,18 +172,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      // Sign out from Firebase (this will trigger the auth state change)
+      await signOutUser();
+      console.log('🚪 User logged out');
+    } catch (error) {
+      console.error('❌ Error during logout:', error);
+      // Fallback: clear local state even if Firebase logout fails
       setIsAuthenticated(false);
       setUser(null);
-      // Note: We keep onboarding state so user doesn't see intro again
-
       await Promise.all([
         AsyncStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED),
         AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA),
       ]);
-
-      console.log('🚪 User logged out');
-    } catch (error) {
-      console.error('❌ Error clearing auth cache:', error);
     }
   };
 
@@ -135,6 +204,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('⏭️ Onboarding skipped and cached');
     } catch (error) {
       console.error('❌ Error caching onboarding skip:', error);
+    }
+  };
+
+  // Firebase Authentication Methods
+  const signInWithEmailAndPassword = async (email: string, password: string): Promise<User> => {
+    try {
+      const authUser = await signInWithEmail(email, password);
+      const userWithType: User = {
+        ...authUser,
+        userType: 'customer', // Default to customer, can be updated later
+      };
+      
+      // The onAuthStateChanged listener will handle setting the user state
+      return userWithType;
+    } catch (error) {
+      console.error('❌ Email sign-in error:', error);
+      throw error;
+    }
+  };
+
+  const registerWithEmailAndPassword = async (
+    email: string, 
+    password: string, 
+    firstName: string, 
+    lastName: string
+  ): Promise<User> => {
+    try {
+      const authUser = await registerWithEmail(email, password, firstName, lastName);
+      const userWithType: User = {
+        ...authUser,
+        userType: 'customer', // Default to customer, can be updated later
+      };
+      
+      // The onAuthStateChanged listener will handle setting the user state
+      return userWithType;
+    } catch (error) {
+      console.error('❌ Email registration error:', error);
+      throw error;
+    }
+  };
+
+  const sendPhoneOTP = async (phoneNumber: string, recaptchaVerifier: ApplicationVerifier): Promise<ConfirmationResult> => {
+    try {
+      return await sendPhoneVerificationCode(phoneNumber, recaptchaVerifier);
+    } catch (error) {
+      console.error('❌ Phone OTP send error:', error);
+      throw error;
+    }
+  };
+
+  const verifyPhoneOTP = async (confirmationResult: ConfirmationResult, code: string): Promise<User> => {
+    try {
+      const authUser = await verifyPhoneCode(confirmationResult, code);
+      const userWithType: User = {
+        ...authUser,
+        userType: 'customer', // Default to customer, can be updated later
+      };
+      
+      // The onAuthStateChanged listener will handle setting the user state
+      return userWithType;
+    } catch (error) {
+      console.error('❌ Phone OTP verification error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithGoogleCredential = async (idToken: string): Promise<User> => {
+    try {
+      const authUser = await signInWithGoogle(idToken);
+      const userWithType: User = {
+        ...authUser,
+        userType: 'customer', // Default to customer, can be updated later
+      };
+      
+      // The onAuthStateChanged listener will handle setting the user state
+      return userWithType;
+    } catch (error) {
+      console.error('❌ Google sign-in error:', error);
+      throw error;
     }
   };
 
@@ -166,6 +314,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     completeOnboarding,
     skipOnboarding,
+    // Firebase auth methods
+    signInWithEmailAndPassword,
+    registerWithEmailAndPassword,
+    sendPhoneOTP,
+    verifyPhoneOTP,
+    signInWithGoogleCredential,
   };
 
   return (
